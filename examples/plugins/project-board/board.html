@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Project Board</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: var(--font-sans, system-ui);
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        color: var(--color-text-primary, CanvasText);
+        background: var(--color-background-primary, Canvas);
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 8px;
+      }
+      p {
+        font-size: 13px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      form {
+        display: flex;
+        gap: 8px;
+        margin: 24px 0;
+      }
+      input {
+        min-width: 0;
+        flex: 1;
+      }
+      input,
+      button {
+        font: inherit;
+        padding: 9px 12px;
+        border: 1px solid GrayText;
+        border-radius: 6px;
+        color: inherit;
+        background: transparent;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        border-bottom: 1px solid GrayText;
+      }
+      li button {
+        width: 100%;
+        border: 0;
+        border-radius: 0;
+        text-align: left;
+        padding: 14px 0;
+        overflow-wrap: anywhere;
+      }
+      li button[aria-pressed="true"] {
+        text-decoration: line-through;
+        opacity: 0.65;
+      }
+      #error {
+        color: #d44040;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Project Board</h1>
+    <p>Tasks saved on your Phoenix environment, available even when no agent is running.</p>
+    <p id="context">Connecting to Phoenix…</p>
+    <form id="add">
+      <input
+        id="title"
+        aria-label="Task title"
+        placeholder="What needs doing?"
+        maxlength="500"
+        required
+      /><button>Add task</button>
+    </form>
+    <p id="error" role="alert"></p>
+    <ul id="tasks"></ul>
+    <p id="completed"></p>
+    <p id="empty">No tasks yet. Add one to get started.</p>
+    <script>
+      let nextId = 0;
+      let projectId;
+      let capabilities = [];
+      let lastRun;
+      let lastResult;
+      let threadId;
+      const pending = new Map();
+      const call = (method, params) =>
+        new Promise((resolve, reject) => {
+          const id = ++nextId;
+          pending.set(id, { resolve, reject });
+          parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+        });
+      function render(result) {
+        lastResult = result;
+        const tasks = result?.structuredContent?.tasks;
+        if (!tasks) return;
+        const completions = result.structuredContent.completions || [];
+        document.getElementById("completed").textContent = completions.length
+          ? `${completions.length} completed conversations recorded by the sidecar.`
+          : "";
+        document.getElementById("empty").hidden = tasks.length > 0;
+        const list = document.getElementById("tasks");
+        list.replaceChildren();
+        for (const task of tasks) {
+          const li = document.createElement("li"),
+            button = document.createElement("button");
+          button.textContent = task.title;
+          button.setAttribute("aria-pressed", String(task.done));
+          button.onclick = () => mutate("toggle_task", { id: task.id });
+          const attach = document.createElement("button");
+          attach.textContent = "Attach to conversation";
+          attach.dataset.attach = "true";
+          attach.disabled = !threadId || !capabilities.includes("attach");
+          attach.onclick = async () => {
+            try {
+              await call("phoenix/request", { type: "attach", text: task.title });
+            } catch (error) {
+              document.getElementById("error").textContent = error.message;
+            }
+          };
+          li.append(button, attach);
+          list.append(li);
+        }
+      }
+      function context(value) {
+        const c = value?.["phoenix/context"];
+        if (c) {
+          projectId = c.projectId;
+          threadId = c.threadId;
+          capabilities = c.capabilities || [];
+          document.getElementById("context").textContent = c.threadId
+            ? "Thread: " + c.threadId
+            : "Project: " + c.projectId;
+          if (lastRun && lastRun !== c.runStatus && c.runStatus === "completed")
+            void mutate("board", {});
+          lastRun = c.runStatus;
+          if (lastResult) render(lastResult);
+        }
+        if (value?.theme) document.documentElement.style.colorScheme = value.theme;
+        for (const [key, val] of Object.entries(value?.styles?.variables || {}))
+          document.documentElement.style.setProperty(key, val);
+      }
+      window.addEventListener("message", (event) => {
+        if (event.source !== parent) return;
+        const message = event.data;
+        if (pending.has(message.id)) {
+          const p = pending.get(message.id);
+          pending.delete(message.id);
+          message.error ? p.reject(new Error(message.error.message)) : p.resolve(message.result);
+        }
+        if (message.method === "ui/notifications/tool-result") render(message.params);
+        if (message.method === "ui/notifications/host-context-changed") context(message.params);
+      });
+      async function mutate(name, args) {
+        document.getElementById("error").textContent = "";
+        document.querySelectorAll("button").forEach((b) => (b.disabled = true));
+        try {
+          render(await call("tools/call", { name, arguments: { ...args, projectId } }));
+          if (name === "add_task") document.getElementById("title").value = "";
+        } catch (error) {
+          document.getElementById("error").textContent = error.message;
+        } finally {
+          document
+            .querySelectorAll("button")
+            .forEach(
+              (b) =>
+                (b.disabled =
+                  b.dataset.attach === "true" && (!threadId || !capabilities.includes("attach"))),
+            );
+        }
+      }
+      document.getElementById("add").onsubmit = (event) => {
+        event.preventDefault();
+        void mutate("add_task", { title: document.getElementById("title").value });
+      };
+      call("ui/initialize", {
+        protocolVersion: "2026-01-26",
+        appInfo: { name: "project-board", version: "0.1.0" },
+        appCapabilities: {},
+      })
+        .then((result) => {
+          context(result.hostContext);
+          parent.postMessage({ jsonrpc: "2.0", method: "ui/notifications/initialized" }, "*");
+        })
+        .catch((error) => (document.getElementById("error").textContent = error.message));
+    </script>
+  </body>
+</html>

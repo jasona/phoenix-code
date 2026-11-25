@@ -152,6 +152,7 @@ export interface RightPanelTabsProps {
   onAddBrowser: () => void;
   /** Keep separate from the DOM click handler so a MouseEvent cannot become a profile id. */
   onAddBrowserInProfile: (profileId: string) => void;
+  onAddPlugins?: (() => void) | undefined;
   onAddTerminal: () => void;
   onAddDiff: () => void;
   onAddFiles: () => void;
@@ -189,7 +190,7 @@ function shouldOpenDefaultBrowserProfileFromMenuClick(pointerType: string | unde
 }
 
 const SURFACE_DISABLED_REASONS = {
-  browser: msg("Browser previews are only available in the M3 Code desktop app."),
+  browser: msg("Browser previews are only available in the Phoenix desktop app."),
   terminal: msg("Terminal surfaces are only available from a project thread."),
   files: msg("Files are only available when a project is open."),
   diff: msg("Diff is only available for server threads in Git repositories."),
@@ -335,6 +336,7 @@ function SurfaceMenuItem(props: {
 }
 
 function RightPanelEmptyState(props: {
+  onAddPlugins?: (() => void) | undefined;
   onAddBrowser: () => void;
   onAddBrowserInProfile: (profileId: string) => void;
   browserProfiles: ReadonlyArray<{ readonly id: string; readonly name: string }>;
@@ -361,6 +363,18 @@ function RightPanelEmptyState(props: {
   const [highlight, setHighlight] = useState(-1);
 
   const actions = [
+    ...(props.onAddPlugins
+      ? [
+          {
+            label: msg("Plugins"),
+            icon: Globe2,
+            shortcut: "",
+            available: true,
+            disabledReason: "",
+            onClick: props.onAddPlugins,
+          },
+        ]
+      : []),
     {
       label: msg("Browser"),
       icon: Globe2,
@@ -601,6 +615,10 @@ function surfaceTitle(
   resolve: MessageResolver = m,
 ): string {
   switch (surface.kind) {
+    case "plugins":
+      return resolve(msg("Plugins"));
+    case "plugin":
+      return surface.title;
     case "diff":
       return resolve(msg("Diff"));
     case "files":
@@ -694,6 +712,9 @@ function SurfaceIcon({
   switch (surface.kind) {
     case "preview":
       return <PreviewFavicon capturedUrl={previewCapturedUrl} url={previewUrl} />;
+    case "plugins":
+    case "plugin":
+      return <Globe2 className="size-3 shrink-0" />;
     case "diff":
       return <FileDiff className="size-3 shrink-0" />;
     case "files":
@@ -1204,6 +1225,18 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
   };
 
   const addSurfaceActions = [
+    ...(props.onAddPlugins
+      ? [
+          {
+            label: msg("Plugins"),
+            icon: Globe2,
+            shortcut: "",
+            available: true,
+            disabledReason: "",
+            onClick: props.onAddPlugins,
+          },
+        ]
+      : []),
     {
       label: msg("Browser"),
       icon: Globe2,
@@ -1688,6 +1721,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
       <div className="flex min-h-0 flex-1 flex-col" data-right-panel-surface-content>
         {props.activeSurfaceId === null ? (
           <RightPanelEmptyState
+            onAddPlugins={props.onAddPlugins}
             onAddBrowser={props.onAddBrowser}
             onAddBrowserInProfile={props.onAddBrowserInProfile}
             browserProfiles={browserProfiles}

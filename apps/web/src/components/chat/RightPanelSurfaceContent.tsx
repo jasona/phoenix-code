@@ -1,3 +1,4 @@
+import { PluginPanel, PluginView } from "../plugins/PluginPanel";
 import { useGT } from "gt-react";
 import type {
   EditorId,
@@ -91,6 +92,19 @@ export function RightPanelSurfaceContent(props: {
   const gt = useGT();
   if (surface === null) return null;
   switch (surface.kind) {
+    case "plugins":
+      return visible ? (
+        <PluginPanel environmentId={threadRef.environmentId} threadRef={threadRef} />
+      ) : null;
+    case "plugin":
+      return visible ? (
+        <PluginView
+          key={`${scopedThreadKey(threadRef)}:${surface.id}`}
+          threadRef={threadRef}
+          pluginId={surface.pluginId}
+          viewId={surface.viewId}
+        />
+      ) : null;
     case "preview":
       return (
         <Suspense fallback={null}>

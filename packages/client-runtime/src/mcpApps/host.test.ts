@@ -107,6 +107,20 @@ describe("makeMcpAppHost", () => {
     ]);
   });
 
+  it("omits host actions that a plugin view cannot perform", () => {
+    const { host, sent } = setup({ hostActions: [] });
+    initialize(host);
+    expect(sent[0]).toMatchObject({
+      result: { hostCapabilities: { serverTools: {}, serverResources: {} } },
+    });
+    const reply = sent[0] as { result: { hostCapabilities: Record<string, unknown> } };
+    expect(reply.result.hostCapabilities).not.toHaveProperty("message");
+    expect(reply.result.hostCapabilities).not.toHaveProperty("updateModelContext");
+    expect(reply.result.hostCapabilities).not.toHaveProperty("openLinks");
+    expect(reply.result.hostCapabilities).not.toHaveProperty("downloadFile");
+    host.dispose();
+  });
+
   it("drops null fields providers report, which the MCP Apps SDK rejects", async () => {
     const { host, sent } = setup({
       callTool: async () => ({ content: [], structuredContent: null, _meta: null }),
@@ -452,4 +466,40 @@ describe("makeMcpAppHost", () => {
       expect(sent.find((m) => m.id === id)?.result).toEqual({});
     }
   });
+});
+
+it("keeps Phoenix operations unavailable to ordinary MCP Apps and routes only explicitly enabled hosts", async () => {
+  const ordinary = setup();
+  initialize(ordinary.host);
+  ordinary.host.receive({
+    jsonrpc: "2.0",
+    id: "phoenix",
+    method: "phoenix/request",
+    params: { type: "context" },
+  });
+  await flush();
+  expect(ordinary.sent.find((message) => message.id === "phoenix")).toMatchObject({
+    error: { code: -32601 },
+  });
+  const called: unknown[] = [];
+  const plugin = setup({
+    phoenixRequest: async (request) => {
+      called.push(request);
+      return { threadId: "bound" };
+    },
+  });
+  initialize(plugin.host);
+  plugin.host.receive({
+    jsonrpc: "2.0",
+    id: "phoenix",
+    method: "phoenix/request",
+    params: { type: "context" },
+  });
+  await flush();
+  expect(called).toEqual([{ type: "context" }]);
+  expect(plugin.sent.find((message) => message.id === "phoenix")).toMatchObject({
+    result: { threadId: "bound" },
+  });
+  plugin.host.dispose();
+  ordinary.host.dispose();
 });

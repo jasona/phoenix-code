@@ -5565,5 +5565,12 @@
   "ad208e3e32c85029": "Tout masquer",
   "3328503592789bed": "Zen",
   "856812e7e1fc445e": "Appels d’outils dans la discussion",
-  "8d545d54c0a9e950": "Masque les commandes, modifications et recherches lancées par les agents. Masquer les réussis garde les échecs. Zen n’affiche que les réponses finales. Les approbations, questions et erreurs s’affichent toujours."
+  "8d545d54c0a9e950": "Masque les commandes, modifications et recherches lancées par les agents. Masquer les réussis garde les échecs. Zen n’affiche que les réponses finales. Les approbations, questions et erreurs s’affichent toujours.",
+  "43f7d96d8de0b70b": "Ouverture du plugin…",
+  "77bc7873d636e9b6": "Autoriser",
+  "10bcefa819fc268e": "Autoriser l’action du plugin ?",
+  "b7efd8973046b66f": "Installez les plugins dans les paramètres sur le Web ou sur ordinateur pour les ouvrir ici.",
+  "ad1e50959843f6f2": "Mettez à jour le serveur de cet environnement pour utiliser les plugins.",
+  "c1b7649ac731ed07": "Plugins",
+  "a4076c219a95e32d": "La vue du plugin s’est arrêtée. Fermez-la et rouvrez-la pour réessayer."
 }

@@ -3,7 +3,8 @@ import {
   scopedThreadKey,
   scopeThreadRef,
 } from "@t3tools/client-runtime/environment";
-import { EnvironmentId, RunId, ThreadId, type ScopedThreadRef } from "@t3tools/contracts";
+import * as Schema from "effect/Schema";
+import { PluginId, EnvironmentId, RunId, ThreadId, type ScopedThreadRef } from "@t3tools/contracts";
 import { msg } from "gt-react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -21,6 +22,8 @@ import type { ThreadPanelPresentation } from "./rightPanelLayout";
 import type { ChatFileAttachment } from "./types";
 
 const RIGHT_PANEL_KINDS = [
+  "plugins",
+  "plugin",
   "diff",
   "files",
   "file",
@@ -45,6 +48,8 @@ export interface DeviceTabTarget {
 }
 
 export type RightPanelSurface =
+  | { id: "plugins"; kind: "plugins" }
+  | { id: `plugin:${string}`; kind: "plugin"; pluginId: string; viewId: string; title: string }
   | { id: `browser:${string}`; kind: "preview"; resourceId: string }
   | { id: "browser:new"; kind: "preview"; resourceId: null }
   | { id: "device" | `device:${string}`; kind: "device"; target?: DeviceTabTarget; title?: string }
@@ -110,6 +115,27 @@ export type RightPanelSurface =
   | ThreadSurface
   /** A linked environment's thread, read through `viaEnvironmentId`; it has no thread here. */
   | LinkedThreadSurface;
+
+const isPluginSurfaceData = Schema.is(
+  Schema.Struct({
+    id: Schema.String,
+    kind: Schema.Literal("plugin"),
+    pluginId: PluginId,
+    viewId: PluginId,
+    title: Schema.String,
+  }),
+);
+
+export function decodePluginSurface(
+  surface: unknown,
+): Extract<RightPanelSurface, { kind: "plugin" }> | null {
+  if (
+    !isPluginSurfaceData(surface) ||
+    surface.id !== `plugin:${surface.pluginId}:${surface.viewId}`
+  )
+    return null;
+  return { ...surface, id: `plugin:${surface.pluginId}:${surface.viewId}` };
+}
 
 export type ThreadSurface = { id: `thread:${string}`; kind: "thread"; threadId: ThreadId };
 
@@ -187,10 +213,11 @@ interface RightPanelStoreState {
     ref: ScopedThreadRef,
     kind: Exclude<
       RightPanelKind,
-      "file" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread"
+      "plugin" | "file" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread"
     >,
   ) => void;
   /** Opens a side chat or subagent of `ref`'s environment as a tab; `ref` itself has no tab. */
+  openPlugin: (ref: ScopedThreadRef, pluginId: string, viewId: string, title: string) => void;
   openThread: (ref: ScopedThreadRef, threadId: ThreadId) => void;
   openLinkedThread: (ref: ScopedThreadRef, target: LinkedThreadTarget) => void;
   /** Records the title the linked environment gave, so the tab and a reopened one show it. */
@@ -261,7 +288,7 @@ interface RightPanelStoreState {
     ref: ScopedThreadRef,
     kind: Exclude<
       RightPanelKind,
-      "file" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread"
+      "plugin" | "file" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread"
     >,
   ) => void;
   setThreadPanelOpen: (
@@ -287,10 +314,19 @@ const DEFAULT_THREAD_PANEL_VISIBILITY: ThreadPanelVisibility = {
 const singletonSurface = (
   kind: Exclude<
     RightPanelKind,
-    "file" | "preview" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread"
+    | "plugin"
+    | "file"
+    | "preview"
+    | "terminal"
+    | "pull-request"
+    | "issue"
+    | "thread"
+    | "linked-thread"
   >,
 ): RightPanelSurface => {
   switch (kind) {
+    case "plugins":
+      return { id: "plugins", kind };
     case "diff":
       return { id: "diff", kind };
     case "files":
@@ -610,6 +646,10 @@ export function migratePersistedRightPanelState(persistedState: unknown): {
                 ? validThreadState.surfaces.flatMap<RightPanelSurface>((surface) => {
                     if (!surface || typeof surface !== "object") return [];
                     const kind = (surface as { kind?: string }).kind;
+                    if (kind === "plugin") {
+                      const plugin = decodePluginSurface(surface);
+                      return plugin ? [plugin] : [];
+                    }
                     if (kind === "thread" || kind === "side-chat") {
                       const decoded = decodeThreadSurface(surface);
                       return decoded === null ? [] : [decoded];
@@ -848,6 +888,18 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
             }
             return upsertSurface(current, singletonSurface(kind));
           }),
+        ),
+      openPlugin: (ref, pluginId, viewId, title) =>
+        set((state) =>
+          userAction(state, scopedThreadKey(ref), (current) =>
+            upsertSurface(current, {
+              id: `plugin:${pluginId}:${viewId}`,
+              kind: "plugin",
+              pluginId,
+              viewId,
+              title,
+            }),
+          ),
         ),
       openDevice: (ref, target, automatic = false) =>
         set((state) =>

@@ -15,23 +15,8 @@ import { ed25519, x25519 } from "@noble/curves/ed25519.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 
-/**
- * Application-layer end-to-end encryption for the WebSocket RPC channel.
- *
- * The server owns a long-lived Ed25519 identity keypair. Each connection runs
- * an authenticated ephemeral X25519 handshake: the client verifies an Ed25519
- * signature over the transcript against the server identity key it pinned from
- * the pairing link, then both sides derive AES-free XChaCha20-Poly1305 record
- * keys with HKDF-SHA256. Every later frame is one binary record with a
- * strictly monotonic counter, so tampering, replay, and reordering all fail
- * the socket.
- *
- * The record cipher is XChaCha20-Poly1305 rather than AES-256-GCM because it
- * runs the pure TypeScript implementation Effect vendors from `@noble/ciphers`
- * on every surface, including mobile runtimes without `crypto.subtle` and
- * browsers older than WebCrypto's X25519/Ed25519 floor. A future protocol
- * version can negotiate AES-256-GCM where it is available.
- */
+// XChaCha20-Poly1305 works on mobile without crypto.subtle and browsers without
+// WebCrypto X25519/Ed25519, so every client can use the same record protocol.
 
 /** Query parameter that asks for an E2EE session, mirroring `frameParts`. */
 export const SOCKET_E2EE_QUERY_PARAM = "e2ee";
@@ -56,9 +41,9 @@ const SERVER_HELLO_TYPE = 0xc2;
 const NONCE_PREFIX_LENGTH = 16;
 /** Rekeying is out of scope for v1; close long before the counter space thins. */
 const MAX_RECORD_COUNTER = 2 ** 32 - 1;
-export const E2EE_HANDSHAKE_TIMEOUT = "15 seconds";
+const E2EE_HANDSHAKE_TIMEOUT = "15 seconds";
 
-export const E2EE_IDENTITY_MISMATCH_CODE = "E2EE_IDENTITY_MISMATCH";
+const E2EE_IDENTITY_MISMATCH_CODE = "E2EE_IDENTITY_MISMATCH";
 export const E2EE_REQUIRED_CODE = "E2EE_REQUIRED";
 
 export class E2eeProtocolError extends Schema.TaggedError<E2eeProtocolError>()(
@@ -85,12 +70,13 @@ export class E2eeIdentityMismatchError extends Schema.TaggedError<E2eeIdentityMi
 
 export type E2eeHandshakeError = E2eeProtocolError | E2eeIdentityMismatchError;
 
+const isProtocolError = Schema.is(E2eeProtocolError);
+const isIdentityMismatchError = Schema.is(E2eeIdentityMismatchError);
+const isHandshakeError = (error: unknown): error is E2eeHandshakeError =>
+  isProtocolError(error) || isIdentityMismatchError(error);
+
 /** The service shape the wrappers run their records against. */
 type AeadService = Aead.Aead["Service"];
-
-// ---------------------------------------------------------------------------
-// Byte helpers
-// ---------------------------------------------------------------------------
 
 const concatBytes = (...parts: ReadonlyArray<Uint8Array>): Uint8Array => {
   const length = parts.reduce((total, part) => total + part.length, 0);
@@ -139,10 +125,6 @@ const timingSafeEqual = (left: Uint8Array, right: Uint8Array): boolean => {
   return difference === 0;
 };
 
-// ---------------------------------------------------------------------------
-// Server identity keys
-// ---------------------------------------------------------------------------
-
 export interface E2eeIdentityKeypair {
   readonly seed: Uint8Array;
   readonly publicKey: Uint8Array;
@@ -169,7 +151,11 @@ export const generateIdentityKeypair = Effect.fn("socketE2ee.generateIdentityKey
 /** `XXXX-XXXX-XXXX-XXXX` over the first 8 bytes of SHA-256 of the public key. */
 export const identityFingerprint = (publicKey: Uint8Array): string => {
   const digest = sha256(publicKey).slice(0, 8);
-  return (Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("").match(/.{4}/g) ?? [])
+  return (
+    Array.from(digest, (byte) => byte.toString(16).padStart(2, "0"))
+      .join("")
+      .match(/.{4}/g) ?? []
+  )
     .join("-")
     .toUpperCase();
 };
@@ -185,21 +171,24 @@ export const decodeIdentityKey = (value: string): Uint8Array | undefined => {
   }
 };
 
-// ---------------------------------------------------------------------------
-// Handshake
-// ---------------------------------------------------------------------------
-
-const randomBytes32 = Effect.fn("socketE2ee.randomBytes32")(function* () {
-  const random = yield* SecureRandom.SecureRandom;
-  return Uint8Array.from(yield* random.randomBytes(KEY_LENGTH));
-});
-
 const deriveRecordKeys = Effect.fn("socketE2ee.deriveRecordKeys")(function* (
   sharedSecret: Uint8Array,
   transcript: Uint8Array,
 ) {
-  const c2sBytes = hkdf(sha256, sharedSecret, transcript, new TextEncoder().encode(C2S_INFO), KEY_LENGTH);
-  const s2cBytes = hkdf(sha256, sharedSecret, transcript, new TextEncoder().encode(S2C_INFO), KEY_LENGTH);
+  const c2sBytes = hkdf(
+    sha256,
+    sharedSecret,
+    transcript,
+    new TextEncoder().encode(C2S_INFO),
+    KEY_LENGTH,
+  );
+  const s2cBytes = hkdf(
+    sha256,
+    sharedSecret,
+    transcript,
+    new TextEncoder().encode(S2C_INFO),
+    KEY_LENGTH,
+  );
   const c2s = yield* Aead.key(Aead.xchacha20Poly1305, c2sBytes);
   const s2c = yield* Aead.key(Aead.xchacha20Poly1305, s2cBytes);
   return { c2s, s2c } as const;
@@ -228,9 +217,9 @@ const transcriptHash = (parts: {
 const encodeClientHello = (ephemeralPub: Uint8Array, nonce: Uint8Array): Uint8Array =>
   concatBytes(new Uint8Array([CLIENT_HELLO_TYPE, PROTOCOL_VERSION]), ephemeralPub, nonce);
 
-const decodeClientHello = (frame: Uint8Array):
-  | { readonly ephemeralPub: Uint8Array; readonly nonce: Uint8Array }
-  | undefined => {
+const decodeClientHello = (
+  frame: Uint8Array,
+): { readonly ephemeralPub: Uint8Array; readonly nonce: Uint8Array } | undefined => {
   if (
     frame.length !== 2 + KEY_LENGTH + NONCE_LENGTH ||
     frame[0] !== CLIENT_HELLO_TYPE ||
@@ -272,7 +261,11 @@ const decodeServerHello = (
     }
   | undefined => {
   const fixedLength = 2 + KEY_LENGTH * 3 + SIGNATURE_LENGTH;
-  if (frame.length < fixedLength + 2 || frame[0] !== SERVER_HELLO_TYPE || frame[1] !== PROTOCOL_VERSION) {
+  if (
+    frame.length < fixedLength + 2 ||
+    frame[0] !== SERVER_HELLO_TYPE ||
+    frame[1] !== PROTOCOL_VERSION
+  ) {
     return undefined;
   }
   const environmentIdLength = ((frame[fixedLength] ?? 0) << 8) | (frame[fixedLength + 1] ?? 0);
@@ -355,10 +348,6 @@ const decryptRecord = Effect.fnUntraced(function* (
 const encodeRecord = (ciphertext: Uint8Array, counter: number): Uint8Array =>
   concatBytes(new Uint8Array([RECORD_VERSION]), bigEndianCounter(counter), ciphertext);
 
-// ---------------------------------------------------------------------------
-// Socket wrappers
-// ---------------------------------------------------------------------------
-
 interface ActiveConnection {
   readonly session: E2eeSession;
 }
@@ -433,10 +422,13 @@ const makeE2eeSocket = Effect.fn("socketE2ee.makeSocket")(function* (
         ),
       ),
     );
-    return Effect.catchIf(send, () => true, (error) =>
-      Effect.fail(
-        new Socket.SocketError({ reason: new Socket.SocketWriteError({ cause: error }) }),
-      ),
+    return Effect.catchIf(
+      send,
+      () => true,
+      (error) =>
+        Effect.fail(
+          new Socket.SocketError({ reason: new Socket.SocketWriteError({ cause: error }) }),
+        ),
     );
   };
 
@@ -452,112 +444,108 @@ const makeE2eeSocket = Effect.fn("socketE2ee.makeSocket")(function* (
     reader: Socket.Reader,
     writer: Socket.Writer,
   ) {
-      const ephemeralPriv = Uint8Array.from(yield* random.randomBytes(KEY_LENGTH));
-      const ephemeralPub = x25519.getPublicKey(ephemeralPriv);
-      const clientNonce = Uint8Array.from(yield* random.randomBytes(KEY_LENGTH));
-      yield* writer.write(encodeClientHello(ephemeralPub, clientNonce));
-      const helloFrame = yield* pullHandshakeFrame(reader.pull);
-      const hello = decodeServerHello(helloFrame);
-      if (hello === undefined) {
-        return yield* new E2eeProtocolError({
-          detail: "The server sent an invalid E2EE handshake.",
-        });
-      }
-      const transcript = transcriptHash({
-        environmentId: config.environmentId,
-        clientEphemeralPub: ephemeralPub,
-        clientNonce,
-        serverEphemeralPub: hello.ephemeralPub,
-        serverNonce: hello.nonce,
-        serverIdentityPub: hello.identityPub,
+    const ephemeralPriv = Uint8Array.from(yield* random.randomBytes(KEY_LENGTH));
+    const ephemeralPub = x25519.getPublicKey(ephemeralPriv);
+    const clientNonce = Uint8Array.from(yield* random.randomBytes(KEY_LENGTH));
+    yield* writer.write(encodeClientHello(ephemeralPub, clientNonce));
+    const helloFrame = yield* pullHandshakeFrame(reader.pull);
+    const hello = decodeServerHello(helloFrame);
+    if (hello === undefined) {
+      return yield* new E2eeProtocolError({
+        detail: "The server sent an invalid E2EE handshake.",
       });
-      const signatureValid = ed25519.verify(hello.signature, transcript, hello.identityPub);
-      const identityMatches =
-        config.expectedServerIdentityKey !== undefined &&
-        timingSafeEqual(hello.identityPub, config.expectedServerIdentityKey);
-      if (!signatureValid || !identityMatches) {
-        return yield* (!signatureValid
-          ? new E2eeProtocolError({
-              detail: "The server's E2EE handshake signature is invalid.",
-            })
-          : new E2eeIdentityMismatchError({
-              pinnedFingerprint: identityFingerprint(config.expectedServerIdentityKey!),
-              receivedFingerprint: identityFingerprint(hello.identityPub),
-            }));
-      }
-      const sharedSecret = x25519.getSharedSecret(ephemeralPriv, hello.ephemeralPub);
-      const keys = yield* deriveRecordKeys(sharedSecret, transcript);
-      const session: E2eeSession = {
-        sendKey: keys.c2s,
-        recvKey: keys.s2c,
-        sendCounter: 0,
-        recvCounter: 0,
-      };
-      // Key confirmation: an empty record under the c2s key before any RPC.
-      const confirm = yield* encryptRecord(session, config.aead, new Uint8Array(0), DIRECTION_C2S);
-      yield* writer.write(encodeRecord(confirm, 0));
-      return session;
+    }
+    const transcript = transcriptHash({
+      environmentId: config.environmentId,
+      clientEphemeralPub: ephemeralPub,
+      clientNonce,
+      serverEphemeralPub: hello.ephemeralPub,
+      serverNonce: hello.nonce,
+      serverIdentityPub: hello.identityPub,
     });
+    const signatureValid = ed25519.verify(hello.signature, transcript, hello.identityPub);
+    const identityMatches =
+      config.expectedServerIdentityKey !== undefined &&
+      timingSafeEqual(hello.identityPub, config.expectedServerIdentityKey);
+    if (!signatureValid || !identityMatches) {
+      return yield* !signatureValid
+        ? new E2eeProtocolError({
+            detail: "The server's E2EE handshake signature is invalid.",
+          })
+        : new E2eeIdentityMismatchError({
+            pinnedFingerprint: identityFingerprint(config.expectedServerIdentityKey!),
+            receivedFingerprint: identityFingerprint(hello.identityPub),
+          });
+    }
+    const sharedSecret = x25519.getSharedSecret(ephemeralPriv, hello.ephemeralPub);
+    const keys = yield* deriveRecordKeys(sharedSecret, transcript);
+    const session: E2eeSession = {
+      sendKey: keys.c2s,
+      recvKey: keys.s2c,
+      sendCounter: 0,
+      recvCounter: 0,
+    };
+    // Key confirmation: an empty record under the c2s key before any RPC.
+    const confirm = yield* encryptRecord(session, config.aead, new Uint8Array(0), DIRECTION_C2S);
+    yield* writer.write(encodeRecord(confirm, 0));
+    return session;
+  });
 
   const serverHandshake = Effect.fn("socketE2ee.serverHandshake")(function* (
     reader: Socket.Reader,
     writer: Socket.Writer,
   ) {
-      const seed = config.identitySeed;
-      if (seed === undefined) {
-        return yield* new E2eeProtocolError({ detail: "The server has no E2EE identity key." });
-      }
-      const identityPub = identityPublicKeyFromSeed(seed);
-      const helloFrame = yield* pullHandshakeFrame(reader.pull);
-      const hello = decodeClientHello(helloFrame);
-      if (hello === undefined) {
-        return yield* new E2eeProtocolError({
-          detail: "The client sent an invalid E2EE handshake.",
-        });
-      }
-      const ephemeralPriv = Uint8Array.from(yield* random.randomBytes(KEY_LENGTH));
-      const ephemeralPub = x25519.getPublicKey(ephemeralPriv);
-      const serverNonce = Uint8Array.from(yield* random.randomBytes(KEY_LENGTH));
-      const transcript = transcriptHash({
-        environmentId: config.environmentId,
-        clientEphemeralPub: hello.ephemeralPub,
-        clientNonce: hello.nonce,
-        serverEphemeralPub: ephemeralPub,
-        serverNonce,
-        serverIdentityPub: identityPub,
+    const seed = config.identitySeed;
+    if (seed === undefined) {
+      return yield* new E2eeProtocolError({ detail: "The server has no E2EE identity key." });
+    }
+    const identityPub = identityPublicKeyFromSeed(seed);
+    const helloFrame = yield* pullHandshakeFrame(reader.pull);
+    const hello = decodeClientHello(helloFrame);
+    if (hello === undefined) {
+      return yield* new E2eeProtocolError({
+        detail: "The client sent an invalid E2EE handshake.",
       });
-      const signature = ed25519.sign(transcript, seed);
-      yield* writer.write(
-        encodeServerHello({
-          ephemeralPub,
-          nonce: serverNonce,
-          identityPub,
-          signature,
-          environmentId: config.environmentId,
-        }),
-      );
-      const sharedSecret = x25519.getSharedSecret(ephemeralPriv, hello.ephemeralPub);
-      const keys = yield* deriveRecordKeys(sharedSecret, transcript);
-      const session: E2eeSession = {
-        sendKey: keys.s2c,
-        recvKey: keys.c2s,
-        sendCounter: 0,
-        recvCounter: 0,
-      };
-      // The client's empty confirm record proves it derived the same keys.
-      const confirmFrame = yield* pullHandshakeFrame(reader.pull);
-      const confirm = yield* decryptRecord(session, config.aead, confirmFrame, DIRECTION_C2S);
-      if (confirm.length !== 0) {
-        return yield* new E2eeProtocolError({
-          detail: "The E2EE key confirmation record was not empty.",
-        });
-      }
-      return session;
+    }
+    const ephemeralPriv = Uint8Array.from(yield* random.randomBytes(KEY_LENGTH));
+    const ephemeralPub = x25519.getPublicKey(ephemeralPriv);
+    const serverNonce = Uint8Array.from(yield* random.randomBytes(KEY_LENGTH));
+    const transcript = transcriptHash({
+      environmentId: config.environmentId,
+      clientEphemeralPub: hello.ephemeralPub,
+      clientNonce: hello.nonce,
+      serverEphemeralPub: ephemeralPub,
+      serverNonce,
+      serverIdentityPub: identityPub,
     });
-
-  const isProtocolError = Schema.is(E2eeProtocolError);
-  const isHandshakeError = (error: unknown): error is E2eeHandshakeError =>
-    isProtocolError(error) || Schema.is(E2eeIdentityMismatchError)(error);
+    const signature = ed25519.sign(transcript, seed);
+    yield* writer.write(
+      encodeServerHello({
+        ephemeralPub,
+        nonce: serverNonce,
+        identityPub,
+        signature,
+        environmentId: config.environmentId,
+      }),
+    );
+    const sharedSecret = x25519.getSharedSecret(ephemeralPriv, hello.ephemeralPub);
+    const keys = yield* deriveRecordKeys(sharedSecret, transcript);
+    const session: E2eeSession = {
+      sendKey: keys.s2c,
+      recvKey: keys.c2s,
+      sendCounter: 0,
+      recvCounter: 0,
+    };
+    // The client's empty confirm record proves it derived the same keys.
+    const confirmFrame = yield* pullHandshakeFrame(reader.pull);
+    const confirm = yield* decryptRecord(session, config.aead, confirmFrame, DIRECTION_C2S);
+    if (confirm.length !== 0) {
+      return yield* new E2eeProtocolError({
+        detail: "The E2EE key confirmation record was not empty.",
+      });
+    }
+    return session;
+  });
 
   return Socket.make({
     reader: Effect.gen(function* () {

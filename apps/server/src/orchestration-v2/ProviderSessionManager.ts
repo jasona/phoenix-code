@@ -1553,65 +1553,64 @@ export const layerWithOptions = (
           ([entry, releasedAt]) =>
             Option.match(entry, {
               onNone: () => Effect.void,
-              onSome: (entry) =>
-                Effect.gen(function* () {
-                  const detachedThread =
-                    input.detachedThreadId === undefined
-                      ? {}
-                      : { detachedThreadId: input.detachedThreadId };
-                  const releasedProviderThreads = yield* readReleasedProviderThreads({
+              onSome: Effect.fn("ProviderSessionManager.releaseEntry")(function* (entry) {
+                const detachedThread =
+                  input.detachedThreadId === undefined
+                    ? {}
+                    : { detachedThreadId: input.detachedThreadId };
+                const releasedProviderThreads = yield* readReleasedProviderThreads({
+                  entry,
+                  reason: input.reason,
+                  ...detachedThread,
+                });
+                if (input.cancelIdleFiber !== false) {
+                  yield* cancelIdleFiber(entry.idleFiber);
+                }
+                // Queued events can persist tool calls after the release-time scan.
+                const afterDrain = Effect.forEach(
+                  releasedProviderThreads,
+                  (thread) =>
+                    writeReleasedToolCallEvents(thread, releasedAt).pipe(
+                      Effect.andThen(writeReleasedSubagentEvents(thread, releasedAt)),
+                    ),
+                  { discard: true },
+                ).pipe(logReleaseFailure(input.providerSessionId));
+                if (input.gracefulSubscribers === true) {
+                  yield* endSubscribers(entry, afterDrain);
+                } else if (input.reason === "server_shutdown") {
+                  yield* interruptSubscribers(entry);
+                } else {
+                  yield* failSubscribers(
                     entry,
-                    reason: input.reason,
-                    ...detachedThread,
-                  });
-                  if (input.cancelIdleFiber !== false) {
-                    yield* cancelIdleFiber(entry.idleFiber);
-                  }
-                  // Queued events can persist tool calls after the release-time scan.
-                  const afterDrain = Effect.forEach(
-                    releasedProviderThreads,
-                    (thread) =>
-                      writeReleasedToolCallEvents(thread, releasedAt).pipe(
-                        Effect.andThen(writeReleasedSubagentEvents(thread, releasedAt)),
-                      ),
-                    { discard: true },
-                  ).pipe(logReleaseFailure(input.providerSessionId));
-                  if (input.gracefulSubscribers === true) {
-                    yield* endSubscribers(entry, afterDrain);
-                  } else if (input.reason === "server_shutdown") {
-                    yield* interruptSubscribers(entry);
-                  } else {
-                    yield* failSubscribers(
-                      entry,
-                      input.detail ?? `Provider session released: ${input.reason}.`,
-                      afterDrain,
-                      input.eventStreamCause,
-                      input.detachedThreadId,
-                    );
-                  }
-                  const closeExit = yield* closeScopeWithin(entry.scope, {
-                    providerSessionId: input.providerSessionId,
-                    reason: input.reason,
-                  });
-                  const records = {
-                    entry,
-                    reason: input.reason,
-                    ...(input.detail === undefined ? {} : { detail: input.detail }),
-                    releasedProviderThreads,
-                    releasedAt,
-                    ...detachedThread,
-                  };
-                  const recorded = yield* Effect.exit(
-                    writeReleaseRecords({ ...records, replaced: false }),
+                    input.detail ?? `Provider session released: ${input.reason}.`,
+                    afterDrain,
+                    input.eventStreamCause,
+                    input.detachedThreadId,
                   );
-                  if (Exit.isFailure(recorded)) {
-                    yield* retryReleaseRecords(records);
-                    return yield* recorded;
-                  }
-                  if (Option.isSome(closeExit) && Exit.isFailure(closeExit.value)) {
-                    return yield* Effect.failCause(closeExit.value.cause);
-                  }
-                }),
+                }
+                const closeExit = yield* closeScopeWithin(entry.scope, {
+                  providerSessionId: input.providerSessionId,
+                  reason: input.reason,
+                });
+                const records = {
+                  entry,
+                  reason: input.reason,
+                  ...(input.detail === undefined ? {} : { detail: input.detail }),
+                  releasedProviderThreads,
+                  releasedAt,
+                  ...detachedThread,
+                };
+                const recorded = yield* Effect.exit(
+                  writeReleaseRecords({ ...records, replaced: false }),
+                );
+                if (Exit.isFailure(recorded)) {
+                  yield* retryReleaseRecords(records);
+                  return yield* recorded;
+                }
+                if (Option.isSome(closeExit) && Exit.isFailure(closeExit.value)) {
+                  return yield* Effect.failCause(closeExit.value.cause);
+                }
+              }),
             }),
           ([entry]) =>
             Option.match(entry, {

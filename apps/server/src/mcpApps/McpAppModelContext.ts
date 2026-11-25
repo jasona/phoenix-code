@@ -1,3 +1,4 @@
+import * as PluginModelContext from "../plugins/PluginModelContext.ts";
 import type { ThreadId, TurnItemId } from "@t3tools/contracts";
 import * as Context from "effect/Context";
 import * as NodeSqliteClient from "@t3tools/shared/nodeSqliteClient";
@@ -65,6 +66,7 @@ export const layer = Layer.effect(
   McpAppModelContext,
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
+    const plugins = yield* PluginModelContext.PluginModelContext;
     const fail = (cause: unknown) => new McpAppModelContextError({ cause });
 
     const set = Effect.fn("McpAppModelContext.set")(function* (input: {
@@ -92,7 +94,7 @@ export const layer = Layer.effect(
     const forThread = Effect.fn("McpAppModelContext.forThread")(function* (threadId: ThreadId) {
       // Match by id across fork lineage; later source rollbacks leave the fork's copy intact,
       // while a started non-scheduled /clear (freshContext) run on this thread clears older notes.
-      return yield* sql<McpAppModelContextEntry>`
+      const stored = yield* sql<McpAppModelContextEntry>`
         WITH boundary AS (
           SELECT COALESCE(MAX(b.ordinal), 0) AS min_ordinal
           FROM orchestration_v2_projection_runs AS b
@@ -137,11 +139,12 @@ export const layer = Layer.effect(
           )
         ORDER BY context.updated_at, context.item_id
       `.pipe(NodeSqliteClient.readOnly, Effect.mapError(fail));
+      return [...stored, ...plugins.forThread(threadId)];
     });
 
     return McpAppModelContext.of({ set, forThread });
   }),
-);
+).pipe(Layer.provide(PluginModelContext.layer));
 
 export const layerEmpty = Layer.succeed(
   McpAppModelContext,

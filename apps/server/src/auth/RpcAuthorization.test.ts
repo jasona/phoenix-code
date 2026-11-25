@@ -1024,3 +1024,46 @@ it.effect("requires provider management to send /logout through chat", () =>
     ]);
   }).pipe(Effect.scoped),
 );
+
+it.effect("plugin file access requires both host-operation and filesystem authority", () =>
+  Effect.gen(function* () {
+    const group = WsRpcGroup.omit(
+      ...[...WsRpcGroup.requests.keys()].filter(
+        (tag): tag is Exclude<keyof typeof RPC_REQUIRED_SCOPES, typeof WS_METHODS.pluginsHost> =>
+          tag !== WS_METHODS.pluginsHost,
+      ),
+    );
+    let handled = 0;
+    const handlers = group.toLayerHandler(WS_METHODS.pluginsHost, () =>
+      Effect.sync(() => {
+        handled++;
+        return {};
+      }),
+    );
+    const clientWith = (scopes: Parameters<typeof RpcAuthorization.layer>[0]) =>
+      RpcTest.makeClient(group).pipe(
+        Effect.provide(Layer.merge(handlers, RpcAuthorization.layer(scopes))),
+      );
+    const input = {
+      pluginId: "board",
+      instanceId: "view",
+      operation: { type: "files" as const, path: "README.md" },
+    };
+    const operator = yield* clientWith([AuthOrchestrationOperateScope]);
+    expect(
+      yield* operator[WS_METHODS.pluginsHost](input).pipe(Effect.asVoid, Effect.flip),
+    ).toMatchObject({
+      requiredPermission: AuthFilesystemReadScope,
+    });
+    expect(handled).toBe(0);
+    const reader = yield* clientWith([AuthFilesystemReadScope]);
+    expect(
+      yield* reader[WS_METHODS.pluginsHost](input).pipe(Effect.asVoid, Effect.flip),
+    ).toMatchObject({
+      requiredPermission: AuthOrchestrationOperateScope,
+    });
+    const authorized = yield* clientWith([AuthOrchestrationOperateScope, AuthFilesystemReadScope]);
+    yield* authorized[WS_METHODS.pluginsHost](input);
+    expect(handled).toBe(1);
+  }).pipe(Effect.scoped),
+);

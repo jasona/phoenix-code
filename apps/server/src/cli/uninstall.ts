@@ -67,11 +67,7 @@ const APP_DATA_PROFILE_NAMES = [
   "T3 Code (Dev)",
 ] as const;
 
-const MAC_APP_BUNDLES = [
-  "M3 Code.app",
-  "M3 Code (Beta).app",
-  "M3 Code (Nightly).app",
-] as const;
+const MAC_APP_BUNDLES = ["M3 Code.app", "M3 Code (Beta).app", "M3 Code (Nightly).app"] as const;
 
 const MAC_CACHE_NAMES = [
   "com.m3code.m3code",
@@ -154,7 +150,7 @@ function isSafeCompleteRemovalPath(input: {
 }
 
 /** Candidate OS-level desktop app, cache, preference, and state paths removed by `--all`. */
-export function collectCompleteRemovalCandidates(input: {
+function collectCompleteRemovalCandidates(input: {
   readonly path: Path.Path;
   readonly platform: NodeJS.Platform;
   readonly homeDir: string;
@@ -225,7 +221,7 @@ export function collectCompleteRemovalCandidates(input: {
 }
 
 /** Finds desktop-installed CLI symlinks/shims in standard user bin directories. */
-export const findDesktopShimLaunchers = Effect.fn("cli.uninstall.find_desktop_shims")(function* () {
+const findDesktopShimLaunchers = Effect.fn("cli.uninstall.find_desktop_shims")(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const platform = yield* HostProcess.Platform;
@@ -547,25 +543,21 @@ const runUninstall = Effect.fn("cli.uninstall.run")(function* (input: {
     yield* Console.log(`Removed ${launcher}.`);
   }
   for (const shim of plan.desktopShims) {
-    yield* fs
-      .remove(shim, { force: true })
-      .pipe(
-        Effect.mapError(
-          () =>
-            new CliUninstallError({
-              reason: `Could not remove the desktop CLI launcher at ${shim}.`,
-            }),
-        ),
-      );
+    yield* fs.remove(shim, { force: true }).pipe(
+      Effect.mapError(
+        () =>
+          new CliUninstallError({
+            reason: `Could not remove the desktop CLI launcher at ${shim}.`,
+          }),
+      ),
+    );
     yield* Console.log(`Removed ${shim}.`);
   }
   for (const target of plan.completePaths) {
     yield* fs
       .remove(target, { recursive: true, force: true })
       .pipe(
-        Effect.mapError(
-          () => new CliUninstallError({ reason: `Could not remove ${target}.` }),
-        ),
+        Effect.mapError(() => new CliUninstallError({ reason: `Could not remove ${target}.` })),
       );
     yield* Console.log(`Removed ${target}.`);
   }

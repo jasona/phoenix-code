@@ -306,7 +306,7 @@ const POSIX_CLEANUP_SCRIPT = [
  * Spawns a detached OS helper that waits for the Electron app PID to exit and then
  * deletes all scheduled M3 Code paths.
  */
-export function spawnDetachedDesktopCleanup(input: {
+function spawnDetachedDesktopCleanup(input: {
   readonly platform: NodeJS.Platform;
   readonly pid: number;
   readonly paths: ReadonlyArray<string>;
@@ -366,7 +366,7 @@ export function spawnDetachedDesktopCleanup(input: {
   });
 }
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const environment = yield* DesktopEnvironment.DesktopEnvironment;
   const appIdentity = yield* DesktopAppIdentity.DesktopAppIdentity;
   const cliCommand = yield* DesktopCliCommand.DesktopCliCommand;

@@ -5571,5 +5571,12 @@
   "ad208e3e32c85029": "Alle ausblenden",
   "3328503592789bed": "Zen",
   "856812e7e1fc445e": "Tool-Aufrufe im Chat",
-  "8d545d54c0a9e950": "Die Befehle, Bearbeitungen und Suchen ausblenden, die Agenten ausführen. „Erfolgreiche ausblenden“ behält Fehler. „Zen“ zeigt nur endgültige Antworten. Genehmigungen, Fragen und Fehler werden immer angezeigt."
+  "8d545d54c0a9e950": "Die Befehle, Bearbeitungen und Suchen ausblenden, die Agenten ausführen. „Erfolgreiche ausblenden“ behält Fehler. „Zen“ zeigt nur endgültige Antworten. Genehmigungen, Fragen und Fehler werden immer angezeigt.",
+  "43f7d96d8de0b70b": "Plugin wird geöffnet…",
+  "77bc7873d636e9b6": "Erlauben",
+  "10bcefa819fc268e": "Plugin-Aktion erlauben?",
+  "b7efd8973046b66f": "Installiere Plugins in den Einstellungen der Web- oder Desktop-App, um sie hier zu öffnen.",
+  "ad1e50959843f6f2": "Aktualisiere den Server dieser Umgebung, um Plugins zu verwenden.",
+  "c1b7649ac731ed07": "Plugins",
+  "a4076c219a95e32d": "Die Plugin-Ansicht wurde beendet. Schließe sie und öffne sie erneut."
 }

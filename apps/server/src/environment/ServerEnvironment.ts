@@ -239,6 +239,8 @@ export const make = Effect.gen(function* () {
       threadSettlement: true,
       threadAutoSettlement: true,
       storageCleanup: true,
+      pluginViews: true,
+      pluginHostVersion: 1,
       storageCleanupRun: true,
       databaseStorage: true,
       secretSourceCheck: true,

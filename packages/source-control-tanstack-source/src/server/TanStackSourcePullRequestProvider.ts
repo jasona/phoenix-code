@@ -271,7 +271,7 @@ export const make = Effect.gen(function* () {
           : ("unknown" as const),
     autoMergeEnabled: pull.autoMerge != null,
     ...(pull.autoMerge?.method === "merge" || pull.autoMerge?.method === "squash"
-      ? { autoMergeMethod: pull.autoMerge.method }
+      ? ({ autoMergeMethod: pull.autoMerge.method } as const)
       : {}),
   });
 

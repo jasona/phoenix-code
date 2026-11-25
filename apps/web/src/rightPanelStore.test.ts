@@ -41,6 +41,36 @@ async function reloadRightPanelStore() {
 }
 
 describe("rightPanelStore", () => {
+  it("restores plugin tabs and closed views without changing their thread binding", async () => {
+    const store = useRightPanelStore.getState();
+    store.openPlugin(refA, "project-board", "board", "Board");
+    store.openPlugin(refA, "project-board", "board", "Board");
+    store.openPlugin(refB, "project-board", "board", "Board");
+    await reloadRightPanelStore();
+    expect(
+      selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA).surfaces,
+    ).toHaveLength(1);
+    useRightPanelStore.getState().closeSurface(refA, "plugin:project-board:board");
+    const { storage, name } = useClosedViewStore.persist.getOptions();
+    const saved = await storage!.getItem(name!);
+    useClosedViewStore.setState({ entries: [] });
+    await storage!.setItem(name!, saved!);
+    await useClosedViewStore.persist.rehydrate();
+    expect(useClosedViewStore.getState().entries).toHaveLength(1);
+    await reopenClosedView(useClosedViewStore.getState().entries[0]!, {
+      workspaceAvailable: true,
+      openPreview: () => {
+        throw new Error("Plugin tabs do not use browser sessions");
+      },
+    });
+    expect(
+      selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA).activeSurfaceId,
+    ).toBe("plugin:project-board:board");
+    expect(
+      selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refB).surfaces,
+    ).toHaveLength(1);
+  });
+
   it("opens a hosted side chat's panel actions in its parent's panel until unhosted", () => {
     const store = useRightPanelStore.getState();
     const unhost = hostRightPanel(refB, refA);

@@ -12,7 +12,11 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { decodeLinkedThreadSurface } from "./linkedThreadSurface";
 import { resolveStorage } from "./lib/storage";
 import { randomUUID } from "./lib/utils";
-import { decodeThreadSurface, type RightPanelSurface } from "./rightPanelStore";
+import {
+  decodePluginSurface,
+  decodeThreadSurface,
+  type RightPanelSurface,
+} from "./rightPanelStore";
 
 export type ClosedView =
   | {
@@ -61,6 +65,9 @@ const isClosedViewEntry = (entry: unknown): entry is ClosedViewEntry => {
   const surface = view.surface;
   if (!surface || typeof surface.id !== "string") return false;
   switch (surface.kind) {
+    case "plugin":
+      return decodePluginSurface(surface) !== null;
+    case "plugins":
     case "diff":
     case "files":
     case "pull-requests":

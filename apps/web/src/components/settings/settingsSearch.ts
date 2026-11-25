@@ -39,6 +39,7 @@ export type SettingsPath =
   | "/settings/access"
   | "/settings/secrets"
   | "/settings/maintenance"
+  | "/settings/plugins"
   | "/settings/labs"
   | "/settings/about"
   | "/settings/archived";
@@ -116,6 +117,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/access": msg("Sharing & access"),
   "/settings/secrets": msg("Secrets"),
   "/settings/maintenance": msg("Maintenance"),
+  "/settings/plugins": msg("Plugins"),
   "/settings/labs": msg("Labs"),
   "/settings/about": msg("About"),
   "/settings/voice": msg("Voice"),
@@ -156,6 +158,7 @@ const ALL_SETTINGS_NAV_GROUPS: ReadonlyArray<SettingsNavGroup> = [
     heading: msg("Agents"),
     paths: [
       "/settings/providers",
+      "/settings/plugins",
       "/settings/inference",
       "/settings/threads",
       "/settings/browser",
@@ -254,6 +257,12 @@ const SOURCE_CONTROL_HOST_TERMS = sourceControlClients.definitions
   .join(" ");
 
 export const SETTINGS_SEARCH_ITEMS = [
+  {
+    id: "plugins",
+    title: msg("Plugins"),
+    to: "/settings/plugins",
+    searchTerms: ["plugin sidecar extension MCP app"],
+  },
   {
     id: "storage-worktree-keep-when",
     targetId: "storage-worktrees",
@@ -978,7 +987,7 @@ export const SETTINGS_SEARCH_ITEMS = [
   },
   {
     id: "text-generation-fallback",
-    title: "Text generation fallback",
+    title: msg("Text generation fallback"),
     to: "/settings/threads",
     scope: "environment",
     searchTerms: ["local models only cloud privacy background writing titles commit messages"],
@@ -1105,7 +1114,7 @@ export const SETTINGS_SEARCH_ITEMS = [
   },
   {
     id: "inference-servers",
-    title: "Inference servers",
+    title: msg("Inference servers"),
     to: "/settings/inference",
     searchTerms: [
       "local models self-hosted model server gpu ollama lm studio llama.cpp vllm sglang openai compatible base url api key context window concurrency load queue",
@@ -1551,6 +1560,7 @@ export type SettingsSearchItemId = (typeof SETTINGS_SEARCH_ITEMS)[number]["id"];
 const SEARCH_ITEMS_BY_ID = new Map(SETTINGS_SEARCH_ITEMS.map((item) => [item.id, item] as const));
 
 const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScope | null>> = {
+  "/settings/plugins": "environment",
   "/settings/diagnostics": "environment",
   "/settings/projects": "project",
   "/settings/general": null,
