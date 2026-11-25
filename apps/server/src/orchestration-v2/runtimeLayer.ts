@@ -1,3 +1,4 @@
+import * as PluginEvents from "../plugins/PluginEvents.ts";
 import * as WorktreeBranchSync from "./WorktreeBranchSync.ts";
 import * as GuestShareService from "../guest/GuestShareService.ts";
 import * as UsageLimitRecoveryWorker from "./UsageLimitRecoveryWorker.ts";
@@ -8,6 +9,8 @@ import * as OrchestrationCommandReceipts from "../persistence/OrchestrationComma
 import * as OrchestrationEventStore from "../persistence/OrchestrationEventStore.ts";
 import * as McpAppModelContext from "../mcpApps/McpAppModelContext.ts";
 import * as PreviewAgentActivity from "../preview/PreviewAgentActivity.ts";
+import * as PluginHost from "../plugins/PluginHost.ts";
+import * as Plugins from "../plugins/Plugins.ts";
 import * as McpAppRequests from "../mcpApps/McpAppRequests.ts";
 import * as McpSignIn from "../mcpApps/McpSignIn.ts";
 import * as ProviderSessionRuntime from "../persistence/ProviderSessionRuntime.ts";
@@ -416,6 +419,22 @@ const layerMcpSignInProvided = McpSignIn.layer.pipe(
 export const layer = Layer.mergeAll(
   layerCommandOutputHubProvided,
   layerOrchestratorProvided,
+  Plugins.layer,
+  PluginEvents.layer.pipe(
+    Layer.provide(
+      Layer.mergeAll(Plugins.layer, layerOrchestratorProvided, layerThreadManagementProvided),
+    ),
+  ),
+  PluginHost.layer.pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        Plugins.layer,
+        layerThreadManagementProvided,
+        ProjectStore.layer,
+        layerOrchestratorProvided,
+      ),
+    ),
+  ),
   layerMcpAppRequestsProvided,
   layerMcpSignInProvided,
   layerThreadManagementProvided,

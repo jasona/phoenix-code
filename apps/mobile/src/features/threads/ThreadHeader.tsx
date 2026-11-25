@@ -1,3 +1,6 @@
+import { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { PluginLaunchSync } from "./PluginLaunchSync";
+import { useNavigation } from "@react-navigation/native";
 import { useGT, useMessages } from "gt-react-native";
 
 import { AppBar } from "../../components/ui/AppBar";
@@ -25,6 +28,7 @@ export function ThreadHeader(props: {
   readonly onOpenFilesInspector: () => void;
 }) {
   const gt = useGT();
+  const navigation = useNavigation();
   const m = useMessages();
   const goBack = useWorkspaceBackNavigation();
   const { toggleAuxiliaryPane, startNewTask } = useAdaptiveWorkspaceLayout();
@@ -44,26 +48,46 @@ export function ThreadHeader(props: {
         },
       ]
     : [];
+  if (!props.draft)
+    actions.push({
+      accessibilityLabel: gt("Plugins"),
+      icon: "square.grid.2x2",
+      onPress: () =>
+        navigation.navigate("ThreadPlugins", {
+          environmentId: String(props.gitControls.environmentId),
+          threadId: String(props.gitControls.threadId),
+        }),
+    });
   const menus = [gitMenu, terminalMenu].filter((menu): menu is AppBarMenu => menu !== null);
 
   return (
-    <AppBar
-      title={props.title}
-      subtitle={props.subtitle}
-      onBackToList={goBack}
-      onCompose={props.draft ? undefined : startNewTask}
-      backInSplitView={
-        props.onReturnToThread
-          ? {
-              accessibilityLabel: gt("Return to chat"),
-              icon: "chevron.left",
-              onPress: props.onReturnToThread,
-            }
-          : undefined
-      }
-      actions={actions}
-      menus={menus}
-      hideBottomBorder
-    />
+    <>
+      {!props.draft && (
+        <PluginLaunchSync
+          threadRef={{
+            environmentId: EnvironmentId.make(props.gitControls.environmentId),
+            threadId: ThreadId.make(props.gitControls.threadId),
+          }}
+        />
+      )}
+      <AppBar
+        title={props.title}
+        subtitle={props.subtitle}
+        onBackToList={goBack}
+        onCompose={props.draft ? undefined : startNewTask}
+        backInSplitView={
+          props.onReturnToThread
+            ? {
+                accessibilityLabel: gt("Return to chat"),
+                icon: "chevron.left",
+                onPress: props.onReturnToThread,
+              }
+            : undefined
+        }
+        actions={actions}
+        menus={menus}
+        hideBottomBorder
+      />
+    </>
   );
 }

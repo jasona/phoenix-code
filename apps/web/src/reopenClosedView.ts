@@ -149,6 +149,9 @@ export async function reopenClosedView(
       }
       break;
     }
+    case "plugin":
+      panels.openPlugin(ref, surface.pluginId, surface.viewId, surface.title);
+      break;
     case "device":
       if (surface.target) {
         panels.openDevice(ref, surface.target);

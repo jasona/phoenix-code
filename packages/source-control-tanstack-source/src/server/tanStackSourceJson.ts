@@ -255,7 +255,7 @@ export const headBranchName = (head: string) =>
 /** Absent when Source names no visibility, so a reader tells unknown from public. */
 const visibilityOf = (pull: Pick<SourcePull, "visibility">) =>
   pull.visibility === "private" || pull.visibility === "public"
-    ? { visibility: pull.visibility }
+    ? ({ visibility: pull.visibility } as const)
     : {};
 
 export function toActor(login: string | null, host: string): PullRequestActor | null {

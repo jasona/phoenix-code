@@ -2,6 +2,7 @@ import * as Schema from "effect/Schema";
 import { GitPreparePullRequestThreadInput, GitRunStackedActionInput } from "./git.ts";
 import {
   AuthAccessWriteScope,
+  AuthFilesystemReadScope,
   AuthEnvironmentMaintainScope,
   AuthOrchestrationOperateScope,
   AuthOrchestrationReadScope,
@@ -13,12 +14,16 @@ import {
   type AuthEnvironmentScope,
   mcpClientScopes,
 } from "./auth.ts";
+import { PluginHostInput } from "./plugins.ts";
 import { PeerLinkLinkPairingInput } from "./peerLink.ts";
 import { ORCHESTRATION_V2_WS_METHODS } from "./orchestrationV2.ts";
 import { WS_METHODS } from "./rpc.ts";
 
 /** Incremental client enforcement; the server still authorizes every request. */
 export const CLIENT_GUARDED_RPC_SCOPES = {
+  [WS_METHODS.pluginsInstall]: AuthTerminalOperateScope,
+  [WS_METHODS.pluginsRequest]: AuthTerminalOperateScope,
+  [WS_METHODS.pluginsHost]: AuthOrchestrationOperateScope,
   [WS_METHODS.providerAuthRemoveMethod]: AuthProvidersManageScope,
   // An MCP sign-in stores a credential for the agent, as an account sign-in does.
   [WS_METHODS.providerMcpSignInStart]: AuthProvidersManageScope,
@@ -112,6 +117,7 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
 } as const;
 export type ClientGuardedRpcTag = keyof typeof CLIENT_GUARDED_RPC_SCOPES;
 
+const decodePluginHost = Schema.decodeUnknownSync(PluginHostInput);
 const decodePrepareThread = Schema.decodeUnknownSync(GitPreparePullRequestThreadInput);
 const decodeStackedAction = Schema.decodeUnknownSync(GitRunStackedActionInput);
 const decodeLinkPairing = Schema.decodeUnknownSync(PeerLinkLinkPairingInput);
@@ -120,6 +126,12 @@ export function clientRpcRequiredScopes(
   method: string,
   input: unknown,
 ): readonly AuthEnvironmentScope[] {
+  if (method === WS_METHODS.pluginsHost && input !== undefined) {
+    const request = decodePluginHost(input);
+    return request.operation.type === "files" || request.operation.type === "openFile"
+      ? [AuthOrchestrationOperateScope, AuthFilesystemReadScope]
+      : [AuthOrchestrationOperateScope];
+  }
   if (method === WS_METHODS.gitPreparePullRequestThread && input !== undefined) {
     const payload = decodePrepareThread(input);
     if (payload.mode === "worktree" && payload.threadId !== undefined)

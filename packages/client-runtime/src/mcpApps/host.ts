@@ -15,6 +15,15 @@ type JsonRpcId = string | number;
 export type McpAppDisplayMode = "inline" | "fullscreen" | "pip";
 
 export interface McpAppHostContext {
+  readonly "phoenix/context"?: {
+    readonly environmentId: string;
+    readonly threadId?: string;
+    readonly capabilities?: ReadonlyArray<string>;
+    readonly runStatus?: string | null;
+    readonly projectId?: string;
+    readonly threadTitle?: string;
+    readonly branch?: string | null;
+  };
   readonly theme: "light" | "dark";
   readonly styles: { readonly variables: Readonly<Record<string, string>> };
   readonly displayMode: McpAppDisplayMode;
@@ -81,6 +90,10 @@ const isMcpAppHostRefusal = Schema.is(McpAppHostRefusal);
 
 export interface McpAppHostOptions {
   readonly app: McpAppReference;
+  readonly hostActions?: ReadonlyArray<
+    "openLinks" | "message" | "updateModelContext" | "downloadFile"
+  >;
+  readonly phoenixRequest?: (operation: unknown) => Promise<unknown>;
   readonly hostVersion: string;
   readonly post: (message: unknown) => void;
   readonly hostContext: () => McpAppHostContext;
@@ -227,6 +240,14 @@ export function makeMcpAppHost(options: McpAppHostOptions): McpAppHost {
 
   const handleRequest = (id: JsonRpcId, method: string, params: Record<PropertyKey, unknown>) => {
     switch (method) {
+      case "phoenix/request": {
+        if (!options.phoenixRequest) {
+          fail(id, -32601, "Phoenix capabilities are unavailable.");
+          return;
+        }
+        answer(id, () => options.phoenixRequest!(params));
+        return;
+      }
       case "ui/initialize": {
         const requested = params.protocolVersion;
         const declared = Predicate.isObject(params.appCapabilities)
@@ -241,13 +262,22 @@ export function makeMcpAppHost(options: McpAppHostOptions): McpAppHost {
             requested === MCP_APP_PROTOCOL_VERSION ? requested : MCP_APP_PROTOCOL_VERSION,
           hostInfo: { name: "t3-code", version: options.hostVersion },
           hostCapabilities: {
-            openLinks: {},
+            ...(options.hostActions === undefined || options.hostActions.includes("openLinks")
+              ? { openLinks: {} }
+              : {}),
             serverTools: {},
             serverResources: {},
             logging: {},
-            message: { text: {} },
-            updateModelContext: { text: {}, structuredContent: {} },
-            downloadFile: {},
+            ...(options.hostActions === undefined || options.hostActions.includes("message")
+              ? { message: { text: {} } }
+              : {}),
+            ...(options.hostActions === undefined ||
+            options.hostActions.includes("updateModelContext")
+              ? { updateModelContext: { text: {}, structuredContent: {} } }
+              : {}),
+            ...(options.hostActions === undefined || options.hostActions.includes("downloadFile")
+              ? { downloadFile: {} }
+              : {}),
             sandbox: {
               ...(options.app.csp === undefined ? {} : { csp: options.app.csp }),
               ...(options.app.permissions === undefined

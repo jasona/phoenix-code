@@ -636,7 +636,7 @@ export const make = Effect.gen(function* () {
                 sql`
                   UPDATE workflow_runs SET pauses = 0
                   WHERE run_id = ${runId} AND ended_at IS NULL AND status != 'paused'
-                `
+                `.pipe(Effect.asVoid)
               : Effect.void,
           ),
         ),

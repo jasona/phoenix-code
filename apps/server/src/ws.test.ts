@@ -4,8 +4,6 @@ import { WebSocket } from "@effect/platform-node/NodeWS";
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- Bind an isolated WebSocket negotiation fixture.
 import * as NodeHttp from "node:http";
 import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
-import * as Option from "effect/Option";
-import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, it } from "@effect/vitest";
 import {
@@ -104,6 +102,8 @@ import * as GitWorkflowService from "./git/GitWorkflowService.ts";
 import * as HostResources from "./resourceMonitor/HostResources.ts";
 import * as ManagedProjectFolders from "./project/ManagedProjectFolders.ts";
 import * as ScratchThreadPromotion from "./project/ScratchThreadPromotion.ts";
+import * as PluginHost from "./plugins/PluginHost.ts";
+import * as Plugins from "./plugins/Plugins.ts";
 import * as McpAppRequests from "./mcpApps/McpAppRequests.ts";
 import * as McpSignIn from "./mcpApps/McpSignIn.ts";
 import * as ModelManifest from "./provider/ModelManifest.ts";
@@ -896,6 +896,8 @@ const layerUnusedConfigRpcServices = Layer.mergeAll(
       refusesRetry: () => Effect.succeed(false),
     }),
   ),
+  Layer.mock(Plugins.Plugins)({}),
+  Layer.mock(PluginHost.PluginHost)({}),
   Layer.mock(McpAppRequests.McpAppRequests)({}),
   Layer.mock(McpSignIn.McpSignIn)({}),
   Layer.mock(ModelManifest.ModelManifest)({}),

@@ -678,7 +678,8 @@
     "./pull-request-references": {
       "types": "./src/pullRequestReferences.ts",
       "default": "./src/pullRequestReferences.ts"
-    }
+    },
+    "./plugins/sdk": "./src/plugins/sdk.ts"
   },
   "scripts": {
     "typecheck": "effect-tsgo tsrs --noEmit",

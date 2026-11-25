@@ -5571,5 +5571,12 @@
   "ad208e3e32c85029": "Dölj alla",
   "3328503592789bed": "Zen",
   "856812e7e1fc445e": "Verktygsanrop i chatten",
-  "8d545d54c0a9e950": "Dölj kommandon, redigeringar och sökningar som agenter kör. Dölj lyckade behåller misslyckanden. Zen visar bara slutliga svar. Godkännanden, frågor och fel visas alltid."
+  "8d545d54c0a9e950": "Dölj kommandon, redigeringar och sökningar som agenter kör. Dölj lyckade behåller misslyckanden. Zen visar bara slutliga svar. Godkännanden, frågor och fel visas alltid.",
+  "43f7d96d8de0b70b": "Öppnar tillägg…",
+  "77bc7873d636e9b6": "Tillåt",
+  "10bcefa819fc268e": "Tillåt tilläggets åtgärd?",
+  "b7efd8973046b66f": "Installera tillägg i inställningarna på webben eller datorn för att öppna dem här.",
+  "ad1e50959843f6f2": "Uppdatera miljöns server för att använda tillägg.",
+  "c1b7649ac731ed07": "Tillägg",
+  "a4076c219a95e32d": "Tilläggsvyn stoppades. Stäng och öppna den igen för att försöka på nytt."
 }

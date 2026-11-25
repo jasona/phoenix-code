@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "type": "number",
+      "enum": [1]
+    },
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "capabilities": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "context",
+              "transcript",
+              "files",
+              "attach",
+              "message",
+              "createThread",
+              "modelContext"
+            ]
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "configuration": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "default": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string",
+                    "enum": ["Infinity", "-Infinity", "NaN"]
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              }
+            },
+            "required": ["title", "default"],
+            "additionalProperties": true
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "server": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["command", "args"],
+      "additionalProperties": true
+    },
+    "sidecar": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "string"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "restart": {
+              "type": "string",
+              "enum": ["never", "on-failure"]
+            }
+          },
+          "required": ["command", "args", "restart"],
+          "additionalProperties": true
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "views": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["thread", "project"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["id", "title", "tool"],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["apiVersion", "id", "name", "version", "server", "views"],
+  "additionalProperties": true,
+  "$defs": {}
+}

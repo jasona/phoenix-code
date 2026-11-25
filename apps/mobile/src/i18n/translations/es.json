@@ -5565,5 +5565,12 @@
   "ad208e3e32c85029": "Ocultar todo",
   "3328503592789bed": "Zen",
   "856812e7e1fc445e": "Llamadas a herramientas en el chat",
-  "8d545d54c0a9e950": "Oculta los comandos, ediciones y búsquedas que ejecutan los agentes. Ocultar las correctas mantiene los fallos. Zen solo muestra las respuestas finales. Las aprobaciones, preguntas y errores siempre se muestran."
+  "8d545d54c0a9e950": "Oculta los comandos, ediciones y búsquedas que ejecutan los agentes. Ocultar las correctas mantiene los fallos. Zen solo muestra las respuestas finales. Las aprobaciones, preguntas y errores siempre se muestran.",
+  "43f7d96d8de0b70b": "Abriendo plugin…",
+  "77bc7873d636e9b6": "Permitir",
+  "10bcefa819fc268e": "¿Permitir la acción del plugin?",
+  "b7efd8973046b66f": "Instala plugins en Ajustes de la web o del escritorio para abrirlos aquí.",
+  "ad1e50959843f6f2": "Actualiza el servidor de este entorno para usar plugins.",
+  "c1b7649ac731ed07": "Plugins",
+  "a4076c219a95e32d": "La vista del plugin se detuvo. Ciérrala y vuelve a abrirla para reintentar."
 }

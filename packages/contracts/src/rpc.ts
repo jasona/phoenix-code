@@ -53,6 +53,15 @@ import {
   ChatGptHandoffInput,
   ChatGptHandoffState,
 } from "./providerSetup.ts";
+import {
+  PluginInstallation,
+  PluginInstallInput,
+  PluginRequestInput,
+  PluginHostInput,
+  PluginLaunch,
+  PluginViewInput,
+  PluginError,
+} from "./plugins.ts";
 import * as Schema from "effect/Schema";
 import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
@@ -520,6 +529,12 @@ export const WS_METHODS = {
   attachmentsCreateUploadUrl: "attachments.createUploadUrl",
   attachmentsDelete: "attachments.delete",
 
+  pluginsList: "plugins.list",
+  pluginsInstall: "plugins.install",
+  pluginsRequest: "plugins.request",
+  pluginsHost: "plugins.host",
+  pluginsSubscribe: "plugins.subscribe",
+  pluginsWatch: "plugins.watch",
   mcpAppsCallTool: "mcpApps.callTool",
   mcpAppsToolInfo: "mcpApps.toolInfo",
   mcpAppsReadResource: "mcpApps.readResource",
@@ -1812,6 +1827,38 @@ const WsAttachmentsDeleteRpc = Rpc.make(WS_METHODS.attachmentsDelete, {
   error: EnvironmentAuthorizationError,
 });
 
+const WsPluginsListRpc = Rpc.make(WS_METHODS.pluginsList, {
+  payload: Schema.Struct({}),
+  success: Schema.Array(PluginInstallation),
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsInstallRpc = Rpc.make(WS_METHODS.pluginsInstall, {
+  payload: PluginInstallInput,
+  success: PluginInstallation,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsWatchRpc = Rpc.make(WS_METHODS.pluginsWatch, {
+  payload: PluginViewInput,
+  success: Schema.Unknown,
+  stream: true,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsSubscribeRpc = Rpc.make(WS_METHODS.pluginsSubscribe, {
+  payload: Schema.Struct({ threadId: ThreadId }),
+  success: PluginLaunch,
+  stream: true,
+  error: EnvironmentAuthorizationError,
+});
+const WsPluginsHostRpc = Rpc.make(WS_METHODS.pluginsHost, {
+  payload: PluginHostInput,
+  success: Schema.Unknown,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsRequestRpc = Rpc.make(WS_METHODS.pluginsRequest, {
+  payload: PluginRequestInput,
+  success: Schema.Unknown,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
 const WsMcpAppsCallToolRpc = Rpc.make(WS_METHODS.mcpAppsCallTool, {
   payload: McpAppCallToolInput,
   success: McpAppCallToolResult,
@@ -2672,6 +2719,12 @@ export const WsRpcGroup = RpcGroup.make(
   WsAssetsPersistChatAttachmentsRpc,
   WsAttachmentsCreateUploadUrlRpc,
   WsAttachmentsDeleteRpc,
+  WsPluginsListRpc,
+  WsPluginsInstallRpc,
+  WsPluginsRequestRpc,
+  WsPluginsHostRpc,
+  WsPluginsSubscribeRpc,
+  WsPluginsWatchRpc,
   WsMcpAppsCallToolRpc,
   WsMcpAppsToolInfoRpc,
   WsMcpAppsReadResourceRpc,

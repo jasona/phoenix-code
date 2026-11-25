@@ -1,0 +1,29 @@
+{
+  "apiVersion": 1,
+  "id": "project-board",
+  "name": "Project Board",
+  "version": "0.1.0",
+  "server": {
+    "command": "node",
+    "args": ["server.mjs"]
+  },
+  "views": [
+    {
+      "id": "board",
+      "title": "Project Board",
+      "tool": "board"
+    },
+    {
+      "id": "project",
+      "title": "Project overview",
+      "tool": "board",
+      "scope": "project"
+    }
+  ],
+  "capabilities": ["context", "attach"],
+  "sidecar": {
+    "command": "node",
+    "args": ["sidecar.mjs"],
+    "restart": "on-failure"
+  }
+}

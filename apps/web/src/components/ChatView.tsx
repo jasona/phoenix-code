@@ -52,6 +52,7 @@ import { recallCheckoutIsRepo, rememberCheckoutIsRepo } from "./ChatView.logic";
 import { useLogicalProjectEnvironments } from "../hooks/useLogicalProjectEnvironments";
 import { useStableCallback } from "../hooks/useStableCallback";
 import { useProjectScriptEditing } from "./chat/useProjectScriptEditing";
+import { PluginLaunchSync } from "./plugins/PluginLaunchSync";
 import { RightPanelSurfaceContent } from "./chat/RightPanelSurfaceContent";
 import { usePendingThreadRequests } from "./chat/usePendingThreadRequests";
 import { isScratchProject } from "@t3tools/client-runtime/state/projects";
@@ -3272,7 +3273,6 @@ export default function ChatView(props: ChatViewProps) {
     composerDraftTarget,
     resendAfterWorkLocallyStable,
     sendInFlightRef,
-    routeThreadKey,
     sendEnvMode,
     setDraftThreadContext,
     workLocallyResendReady,
@@ -4047,6 +4047,7 @@ export default function ChatView(props: ChatViewProps) {
               </div>
             </div>
 
+            {activeThreadRef && !embedded ? <PluginLaunchSync threadRef={activeThreadRef} /> : null}
             {canOperatePreview && activeThreadRef && activeEnvironmentServerBrowser && !embedded ? (
               <PreviewSessionSync threadRef={activeThreadRef} />
             ) : null}
@@ -4214,6 +4215,13 @@ export default function ChatView(props: ChatViewProps) {
           onAddBrowser={() => createBrowserSurface()}
           onAddBrowserInProfile={createBrowserSurfaceStable}
           onDuplicateBrowser={duplicateBrowserSurfaceStable}
+          onAddPlugins={
+            serverConfig?.environment.capabilities.pluginViews === true &&
+            canOperateTerminal &&
+            activeThreadRef
+              ? () => useRightPanelStore.getState().open(activeThreadRef, "plugins")
+              : undefined
+          }
           onAddTerminal={addTerminalSurfaceStable}
           onAddDiff={addDiffSurfaceStable}
           onAddFiles={addFilesSurfaceStable}
