@@ -195,6 +195,20 @@ const proxyRequest = Effect.fn("desktop.protocol.proxyRequest")(function* (
   return withContentSecurityPolicy(response, contentSecurityPolicy);
 });
 
+// Rebuilding the server bundle (`vp pack` cleans dist/) under a source build deletes the client;
+// an empty 404 would leave a black window that every relaunch repeats.
+const missingClientResponse = (root: string) => {
+  const escaped = root.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
+  return new Response(
+    `<!doctype html><meta charset="utf-8"><title>Web app missing</title>` +
+      `<body>` +
+      `<h1>The web app files are missing</h1>` +
+      `<p>No index.html in <code>${escaped}</code>. The server bundle was probably rebuilt without the web client.</p>` +
+      `<p>Quit, then run <code>vp run build:desktop</code>, or copy <code>apps/web/dist</code> to <code>apps/server/dist/client</code>.</p>`,
+    { status: 503, headers: { "content-type": "text/html; charset=utf-8" } },
+  );
+};
+
 const serveDesktopAsset = Effect.fn("desktop.protocol.serveAsset")(function* (
   request: Request,
   assetDirectory: string,
@@ -223,6 +237,7 @@ const serveDesktopAsset = Effect.fn("desktop.protocol.serveAsset")(function* (
     filePath = path.join(root, "index.html");
   }
   const contents = yield* fileSystem.readFile(filePath).pipe(Effect.orElseSucceed(() => null));
+  if (contents === null && filePath !== assetPath) return missingClientResponse(root);
   if (contents === null) return new Response(null, { status: 404 });
   return new Response(request.method === "HEAD" ? null : new Uint8Array(contents), {
     headers: {

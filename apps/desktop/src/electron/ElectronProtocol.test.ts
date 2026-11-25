@@ -65,6 +65,29 @@ describe("ElectronProtocol", () => {
     }).pipe(Effect.provide(Layer.merge(layerProtocol, NodeServices.layer))),
   );
 
+  it.effect("explains a missing client instead of serving an empty page", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const directory = yield* fileSystem.makeTempDirectoryScoped();
+      let handler: ((request: Request) => Promise<Response>) | undefined;
+      handleMock.mockImplementation((_scheme, nextHandler) => {
+        handler = nextHandler;
+      });
+      const protocol = yield* ElectronProtocol.ElectronProtocol;
+      yield* protocol.registerDesktopProtocol({ scheme: "t3code", assetDirectory: directory });
+
+      const page = yield* Effect.promise(() =>
+        handler!(new Request("t3code://app/settings/labs", { headers: { accept: "text/html" } })),
+      );
+      assert.equal(page.status, 503);
+      assert.include(yield* Effect.promise(() => page.text()), "vp run build:desktop");
+      const chunk = yield* Effect.promise(() =>
+        handler!(new Request("t3code://app/assets/_chat.settings.labs-abc.js")),
+      );
+      assert.equal(chunk.status, 404);
+    }).pipe(Effect.provide(Layer.merge(layerProtocol, NodeServices.layer))),
+  );
+
   it.effect("proxies the stable renderer origin to the current app server", () =>
     Effect.gen(function* () {
       let handler: ((request: Request) => Promise<Response>) | undefined;
