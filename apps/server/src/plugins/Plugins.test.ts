@@ -141,7 +141,10 @@ it.live(
         "stale-view",
       );
       yield* plugins.request({ action: "remove", pluginId: "project-board" });
-      assert.deepStrictEqual(yield* plugins.list(), []);
+      assert.deepStrictEqual(
+        (yield* plugins.list()).map((entry) => entry.manifest.id),
+        ["mission-control"],
+      );
       assert.strictEqual(
         (yield* plugins
           .request({
@@ -177,7 +180,10 @@ it.live("rejects malformed manifests without registering executable code", () =>
     const plugins = yield* Plugins.Plugins;
     const error = yield* plugins.install({ directory }).pipe(Effect.asVoid, Effect.flip);
     assert.strictEqual(error.reason, "invalid-manifest");
-    assert.deepStrictEqual(yield* plugins.list(), []);
+    assert.deepStrictEqual(
+      (yield* plugins.list()).map((entry) => entry.manifest.id),
+      ["mission-control"],
+    );
   }).pipe(
     Effect.provide(
       Plugins.layer.pipe(
@@ -243,7 +249,10 @@ it.live("delivers only granted background completions to an enabled sidecar with
     assert.notInclude(logs, "other-run");
     assert.strictEqual(logs.split("allowed-run").length - 1, 1);
     yield* plugins.request({ action: "configure", pluginId: "events", scope: null });
-    assert.isUndefined((yield* plugins.list())[0]?.backgroundScope);
+    assert.isUndefined(
+      (yield* plugins.list()).find((entry) => entry.manifest.id === "project-board")
+        ?.backgroundScope,
+    );
   }).pipe(
     Effect.provide(
       Layer.merge(Plugins.layer, PluginSidecars.layer).pipe(

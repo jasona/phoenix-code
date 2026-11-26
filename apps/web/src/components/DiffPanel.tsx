@@ -35,7 +35,7 @@ import { useFilesystemReadAccess } from "~/state/filesystem";
 import { useOpenInPreferredEditor } from "../editorPreferences";
 import { useFileContextMenuHandler } from "../fileContextMenu";
 import { type DraftId } from "../composerDraftStore";
-import { openDiffFilePrimaryAction } from "../diffFileActions";
+import { openDiffFilePrimaryAction, resolveDiffPathForWorkspace } from "../diffFileActions";
 import { toolCallDiff } from "../lib/toolCallDiff";
 import { useCheckpointDiff, useTurnItemDetail } from "~/state/queries";
 import { revisionedQuery } from "~/state/revisionedQuery";
@@ -226,16 +226,20 @@ function DiffFileHeaderSuffix({
 
 interface DiffPanelProps {
   mode?: DiffPanelMode;
+  threadRef?: ScopedThreadRef;
   composerDraftTarget: ScopedThreadRef | DraftId;
   workspaceMutationId: string | null;
   visible: boolean;
+  onOpenFile?: (relativePath: string) => void;
 }
 
 export default function DiffPanel({
   mode = "inline",
+  threadRef,
   composerDraftTarget,
   workspaceMutationId,
   visible,
+  onOpenFile,
 }: DiffPanelProps) {
   const gt = useGT();
   const messages = useMessages();
@@ -262,7 +266,8 @@ export default function DiffPanel({
   // The open commit menu keeps the list it opened with, so rows do not move under the pointer.
   const [openCommitMenu, setOpenCommitMenu] = useState<ReviewBranchCommitsResult | null>(null);
 
-  const routeThreadRef = useThreadRouteRef();
+  const currentRouteThreadRef = useThreadRouteRef();
+  const routeThreadRef = threadRef ?? currentRouteThreadRef;
   const activeThreadId = routeThreadRef?.threadId ?? null;
   const activeThread = useQuietThreadShell(routeThreadRef);
   const fileAccess = useFilesystemReadAccess(activeThread?.environmentId ?? null, messages);
@@ -864,6 +869,15 @@ export default function DiffPanel({
   };
   const openDiffFile = (filePath: string) => {
     const repositoryFile = repositoryFileTarget(filePath);
+    if (onOpenFile && repositoryFile?.insideThreadFolder !== false) {
+      const relativePath = resolveDiffPathForWorkspace({
+        filePath,
+        workspaceRoot: activeCwd,
+        repositoryRoot: repositoryFile ? undefined : diffPathRepositoryRoot,
+      });
+      if (relativePath !== null) onOpenFile(relativePath);
+      return;
+    }
     openDiffFilePrimaryAction({
       // The file viewer reads below the thread's folder; a repository outside it opens in the editor.
       threadRef: repositoryFile?.insideThreadFolder === false ? null : routeThreadRef,

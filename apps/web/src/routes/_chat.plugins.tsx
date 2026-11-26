@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useGT } from "gt-react";
-import { useState } from "react";
+import { useOpenMissionControl } from "../hooks/useOpenMissionControl";
+import { useEffect, useState } from "react";
 import { EnvironmentId, ProjectId } from "@t3tools/contracts";
 import { PluginView } from "../components/plugins/PluginPanel";
 import { useProjects, useThreadShells } from "../state/entities";
@@ -13,7 +14,17 @@ function PluginWorkspace() {
   const search = Route.useSearch();
   if (!search.environmentId || !search.pluginId || !search.viewId)
     return <p className="p-5">{gt("Open a plugin from Settings or a conversation.")}</p>;
+  if (search.pluginId === "mission-control" && search.viewId === "dashboard")
+    return <OpenMissionControl environmentId={search.environmentId} />;
   return <PluginWorkspaceContent environmentId={search.environmentId} />;
+}
+function OpenMissionControl({ environmentId }: { environmentId: EnvironmentId }) {
+  const open = useOpenMissionControl();
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- Legacy plugin URLs enter the global workspace through the same navigation as Settings.
+  useEffect(() => {
+    void open(environmentId);
+  }, [environmentId, open]);
+  return null;
 }
 function PluginWorkspaceContent({ environmentId }: { environmentId: EnvironmentId }) {
   const gt = useGT();
@@ -36,7 +47,7 @@ function PluginWorkspaceContent({ environmentId }: { environmentId: EnvironmentI
         <Button variant="ghost" onClick={() => window.history.back()}>
           {gt("Back")}
         </Button>
-        {projectId && (
+        {projectId && view?.scope !== "environment" && (
           <Button
             variant="ghost"
             onClick={() => {
@@ -65,7 +76,15 @@ function PluginWorkspaceContent({ environmentId }: { environmentId: EnvironmentI
           </div>
         </details>
       )}
-      {!projectId ? (
+      {view?.scope === "environment" ? (
+        <div className="min-h-0 flex-1">
+          <PluginView
+            environmentId={environmentId}
+            pluginId={search.pluginId}
+            viewId={search.viewId}
+          />
+        </div>
+      ) : !projectId ? (
         <div className="space-y-3 p-5">
           <p>{gt("Choose a project for this plugin view.")}</p>
           {projects.map((project) => (

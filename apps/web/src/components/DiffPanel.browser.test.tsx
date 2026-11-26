@@ -252,6 +252,50 @@ it.each([
   },
 );
 
+it("uses an explicitly inspected thread and keeps file navigation inside its review desk", async () => {
+  using context = setup("origin/orphan");
+  const inspectedRef = { ...context.threadRef, threadId: ThreadId.make("inspected-thread") };
+  const metadata = preview();
+  const path = "reviewed.ts";
+  state.previews.set(
+    "main",
+    Atom.make(
+      AsyncResult.success({
+        ...metadata,
+        sources: [
+          {
+            ...metadata.sources[0]!,
+            files: [{ path, previousPath: null, additions: 1, deletions: 0 }],
+          },
+        ],
+      }),
+    ),
+  );
+  useDiffPanelStore.getState().selectBranchBaseRef(inspectedRef, "main");
+  const onOpenFile = vi.fn();
+  await using screen = await render(
+    <RegistryContext.Provider value={context.registry}>
+      <DiffPanel
+        threadRef={inspectedRef}
+        composerDraftTarget={inspectedRef}
+        workspaceMutationId={null}
+        visible
+        onOpenFile={onOpenFile}
+      />
+    </RegistryContext.Provider>,
+  );
+  await userEvent.click(screen.getByText(path, { exact: true }));
+  expect(onOpenFile).toHaveBeenCalledWith(path);
+  expect(
+    selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, context.threadRef)
+      .isOpen,
+  ).toBe(false);
+  expect(useDiffPanelStore.getState().byThreadKey[scopedThreadKey(context.threadRef)]).toEqual({
+    kind: "branch",
+    baseRef: "origin/orphan",
+  });
+});
+
 it("opens a repository-relative file from a nested project without a remote", async () => {
   using context = setup("origin/orphan");
   state.thread = { ...state.thread!, worktreePath: null };

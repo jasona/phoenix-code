@@ -1,4 +1,11 @@
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+import { Outlet, createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+
+import { useEffect } from "react";
+import { useMissionControlStore } from "../missionControlStore";
+import {
+  MissionControlWorkspace,
+  MissionControlWorkspaceTabs,
+} from "../components/plugins/MissionControlWorkspace";
 
 import { ThreadRouteView } from "../components/ThreadRouteView";
 import { GlobalVoiceInputIndicator } from "../components/chat/GlobalVoiceInputIndicator";
@@ -12,21 +19,53 @@ import { useShownThreadRouteTarget } from "../hooks/useShownThreadRouteTarget";
 function ChatRouteLayout() {
   // Render both routes here so draft promotion keeps the same ChatView mounted.
   const { shownTarget, modalOpen } = useShownThreadRouteTarget();
+  const router = useRouter();
+  const { environmentId, active, showWorkspace } = useMissionControlStore();
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- Route navigation from the sidebar or a global command reveals the destination workspace.
+  useEffect(
+    () =>
+      router.subscribe("onBeforeLoad", ({ pathChanged, fromLocation, toLocation }) => {
+        const landingDraft =
+          fromLocation?.pathname === "/" && toLocation.pathname.startsWith("/draft/");
+        if (pathChanged && !landingDraft) showWorkspace();
+      }),
+    [router, showWorkspace],
+  );
   return (
-    <>
-      {shownTarget?.kind === "server" && !modalOpen ? (
-        <ThreadLinkPrompt threadRef={shownTarget.threadRef} />
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      {environmentId ? <MissionControlWorkspaceTabs /> : null}
+      <div
+        id="workspace-panel"
+        role={environmentId ? "tabpanel" : undefined}
+        aria-labelledby={environmentId ? "workspace-tab" : undefined}
+        hidden={active}
+        className="min-h-0 flex-1 flex-col [&:not([hidden])]:flex [&>[data-slot=sidebar-inset]]:h-full"
+      >
+        {shownTarget?.kind === "server" && !modalOpen && !active ? (
+          <ThreadLinkPrompt threadRef={shownTarget.threadRef} />
+        ) : null}
+        {shownTarget ? (
+          <ThreadRouteView target={shownTarget} background={modalOpen || active} />
+        ) : modalOpen ? (
+          <SidebarInset className="h-full" />
+        ) : (
+          <Outlet />
+        )}
+        {modalOpen ? <Outlet /> : null}
+      </div>
+      {environmentId ? (
+        <div
+          id="mission-control-panel"
+          role="tabpanel"
+          aria-labelledby="mission-control-tab"
+          hidden={!active}
+          className="min-h-0 flex-1"
+        >
+          <MissionControlWorkspace />
+        </div>
       ) : null}
-      {shownTarget ? (
-        <ThreadRouteView target={shownTarget} background={modalOpen} />
-      ) : modalOpen ? (
-        <SidebarInset className="h-dvh" />
-      ) : (
-        <Outlet />
-      )}
-      {modalOpen ? <Outlet /> : null}
-      <GlobalVoiceInputIndicator hidden={modalOpen} />
-    </>
+      <GlobalVoiceInputIndicator hidden={modalOpen || active} />
+    </div>
   );
 }
 

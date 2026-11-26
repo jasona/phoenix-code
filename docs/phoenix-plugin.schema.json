@@ -22,6 +22,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "missionControl",
               "context",
               "transcript",
               "files",
@@ -135,7 +136,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["thread", "project"]
+                "enum": ["thread", "project", "environment"]
               },
               {
                 "type": "null"
@@ -149,6 +150,5 @@
     }
   },
   "required": ["apiVersion", "id", "name", "version", "server", "views"],
-  "additionalProperties": true,
-  "$defs": {}
+  "additionalProperties": true
 }

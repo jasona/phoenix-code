@@ -1,0 +1,19 @@
+{
+  "apiVersion": 1,
+  "id": "mission-control",
+  "name": "Mission Control",
+  "version": "1.0.0",
+  "capabilities": ["missionControl"],
+  "server": {
+    "command": "node",
+    "args": ["server.mjs"]
+  },
+  "views": [
+    {
+      "id": "dashboard",
+      "title": "Mission Control",
+      "tool": "dashboard",
+      "scope": "environment"
+    }
+  ]
+}

@@ -41,6 +41,7 @@ import * as Option from "effect/Option";
 import * as Queue from "effect/Queue";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
+import * as Schema from "effect/Schema";
 import { FetchHttpClient } from "effect/http";
 
 import { APP_VERSION } from "../branding";
@@ -51,6 +52,7 @@ import {
   type PrimaryEnvironmentTarget,
 } from "../environments/primary/target";
 import { clearComposerDraftsEnvironment } from "../composerDraftStore";
+import { missionControlDrafts } from "../state/mission-control-drafts";
 import { isHostedStaticApp } from "../hostedPairing";
 import { isLocalEnvironmentDisabled } from "../localEnvironment";
 import { appAtomRegistry } from "../rpc/atomRegistry";
@@ -819,6 +821,11 @@ const layerPlatformConnectionSource = Layer.effect(
   }),
 );
 
+class EnvironmentOwnedDataClearError extends Schema.TaggedError<EnvironmentOwnedDataClearError>()(
+  "EnvironmentOwnedDataClearError",
+  { cause: Schema.Defect() },
+) {}
+
 const layerEnvironmentOwnedDataCleanup = Layer.succeed(
   Persistence.EnvironmentOwnedDataCleanup,
   Persistence.EnvironmentOwnedDataCleanup.of({
@@ -828,6 +835,14 @@ const layerEnvironmentOwnedDataCleanup = Layer.succeed(
       }).pipe(
         Effect.andThen(
           Effect.ignore(browserThreadTriageOutboxStore.clearEnvironment(environmentId)),
+        ),
+        Effect.andThen(
+          Effect.ignore(
+            Effect.tryPromise({
+              try: () => missionControlDrafts.clearEnvironment(environmentId),
+              catch: (cause) => new EnvironmentOwnedDataClearError({ cause }),
+            }),
+          ),
         ),
       );
     }),

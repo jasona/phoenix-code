@@ -18,7 +18,7 @@ test(
       .fill(`${APP_DIR}/examples/plugins/project-board`);
     await screen.getByRole("button", "Install plugin", { exact: true }).tap();
     await screen.getByRole("button", "Enable", { exact: true }).tap();
-    await expect(screen.getByText("Enabled", { exact: false })).toBeVisible();
+    await expect(screen.getByText("Enabled", { exact: false }).last()).toBeVisible();
     await screen.getByText("Project permissions", { exact: true }).tap();
     await screen.getByRole("checkbox", "plugin-demo", { exact: true }).tap();
     await t3.open(thread);

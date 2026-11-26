@@ -1,3 +1,5 @@
+import { useOpenMissionControl } from "../hooks/useOpenMissionControl";
+import { useMissionControlStore } from "../missionControlStore";
 import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import { decodeMsg, msg, T, useGT, useMessages, Var } from "gt-react";
 import { m, type MessageResolver } from "../i18n/messages";
@@ -501,6 +503,8 @@ function OpenCommandPaletteDialog(props: {
   const { environments } = useEnvironments();
   const desktopLocalBootstraps = useDesktopLocalBootstraps();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
+  const primaryServerConfig = useServerConfigs().get(primaryEnvironmentId!);
+  const openMissionControl = useOpenMissionControl();
   const availableSettingsSearchItems = useAvailableSettingsSearchItems();
   const { activeDraftThread, activeThread, defaultProjectRef, handleNewThread } =
     useHandleNewThread();
@@ -1537,6 +1541,21 @@ function OpenCommandPaletteDialog(props: {
     });
   }
 
+  if (primaryEnvironmentId && primaryServerConfig?.environment.capabilities.pluginViews) {
+    actionItems.push({
+      kind: "action",
+      value: "action:mission-control",
+      searchTerms: ["mission", "control", "dashboard", "projects"],
+      // oxlint-disable-next-line t3code/no-untranslated-copy -- Mission Control is the bundled plugin’s product name.
+      title: "Mission Control",
+      icon: <LinkIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        await openMissionControl(
+          useMissionControlStore.getState().environmentId ?? primaryEnvironmentId,
+        );
+      },
+    });
+  }
   if (activeThread !== null && activeThreadServerConfig?.environment.capabilities.pluginViews) {
     const threadRef = scopeThreadRef(activeThread.environmentId, activeThread.id);
     actionItems.push({
