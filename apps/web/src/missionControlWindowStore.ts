@@ -22,13 +22,14 @@ const Pane = Schema.Literals(["conversation", "changes", "terminal", "preview", 
 export type MissionControlWindowPane = typeof Pane.Type;
 const ImageStreamLayout = Schema.Literals(["stream", "grid"]);
 export type MissionControlImageStreamLayout = typeof ImageStreamLayout.Type;
-const SidebarKind = Schema.Literals(["tasks", "images"]);
+const SidebarKind = Schema.Literals(["tasks", "subagents", "images"]);
 export type MissionControlSidebarKind = typeof SidebarKind.Type;
 type WindowFile = Extract<RightPanelSurface, { kind: "file" | "files" }>;
 type WindowState = MissionControlWindowPlacement & {
   pane?: MissionControlWindowPane;
   file?: WindowFile;
   tasksOpen?: boolean;
+  subagentsOpen?: boolean;
   imagesOpen?: boolean;
   imagesLayout?: MissionControlImageStreamLayout;
   preferredSidebar?: MissionControlSidebarKind;
@@ -44,6 +45,7 @@ interface WindowStore {
   setPane: (key: string, pane: MissionControlWindowPane) => void;
   setFile: (key: string, file: WindowFile) => void;
   setTasksOpen: (key: string, tasksOpen: boolean) => void;
+  setSubagentsOpen: (key: string, subagentsOpen: boolean) => void;
   setImagesOpen: (key: string, imagesOpen: boolean) => void;
   setImagesLayout: (key: string, imagesLayout: MissionControlImageStreamLayout) => void;
   setPreferredSidebar: (key: string, preferredSidebar: MissionControlSidebarKind) => void;
@@ -150,6 +152,7 @@ function readPersistedState(
     if (!isScopedKey(key) || !isRecord(entry)) continue;
     const state: WindowState = readPlacement(entry);
     if (typeof entry.tasksOpen === "boolean") state.tasksOpen = entry.tasksOpen;
+    if (typeof entry.subagentsOpen === "boolean") state.subagentsOpen = entry.subagentsOpen;
     if (typeof entry.imagesOpen === "boolean") state.imagesOpen = entry.imagesOpen;
     if (isImageStreamLayout(entry.imagesLayout)) state.imagesLayout = entry.imagesLayout;
     if (isSidebarKind(entry.preferredSidebar)) state.preferredSidebar = entry.preferredSidebar;
@@ -205,6 +208,8 @@ export const useMissionControlWindowStore = create<WindowStore>()(
         set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { file }) })),
       setTasksOpen: (key, tasksOpen) =>
         set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { tasksOpen }) })),
+      setSubagentsOpen: (key, subagentsOpen) =>
+        set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { subagentsOpen }) })),
       setImagesOpen: (key, imagesOpen) =>
         set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { imagesOpen }) })),
       setImagesLayout: (key, imagesLayout) =>

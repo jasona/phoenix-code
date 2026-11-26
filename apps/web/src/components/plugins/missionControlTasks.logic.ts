@@ -270,7 +270,6 @@ export function deriveMissionControlTasks(
   };
 }
 
-export const MISSION_CONTROL_TASKS_DOCK_MIN_WIDTH = 680;
 export const MISSION_CONTROL_WIDE_SPLIT_WITH_TASKS_MIN_WIDTH = 1200;
 
 export function resolveMissionControlTasksPanelOpen(input: {

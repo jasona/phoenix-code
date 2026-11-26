@@ -3240,10 +3240,7 @@
       "v": "v"
     },
     {
-      "c": [
-        " ",
-        "på datorn som öppnade den här sidan"
-      ],
+      "c": [" ", "på datorn som öppnade den här sidan"],
       "i": 2,
       "t": "span"
     }
@@ -3255,10 +3252,7 @@
       "v": "v"
     },
     {
-      "c": [
-        " ",
-        "· den som kör den får den här åtkomsten"
-      ],
+      "c": [" ", "· den som kör den får den här åtkomsten"],
       "i": 2,
       "t": "span"
     }
@@ -6272,9 +6266,21 @@
   "e96b2911a5d12031": "File",
   "60324fba185ca3d6": "Granskningsverktyg",
   "1b14230874f19eb9": "Images",
+  "b404539547dae339": "Subagents",
   "fae3639874428042": "Uppgifter",
   "df32991384874326": "Ny terminal",
   "a2f60adfcffc107d": "Öppna en terminal för att undersöka eller köra kontroller i trådens arbetsyta.",
+  "a16ba028118c675a": "{active} of {total} agents working",
+  "f0bd7f4a57a2a2c3": "Running",
+  "b2c0296bf6dce9ce": "Done",
+  "9f287c80687a21da": "Failed",
+  "dd8d0b9b834fc0cd": "Stopped",
+  "6d24a7cb4e921dce": "Idle",
+  "f4e7c94cb69a9b66": "Uppdateras i realtid",
+  "a47025841b9c23aa": "All subagents finished",
+  "4f6d021901feff84": "Hide subagents sidebar",
+  "c67f77211840d7ee": "Subagents and tasks",
+  "09735b0e3ab4e5b2": "Agentuppgifter",
   "e9d5ad90c4c0be79": "Aktiv",
   "ff692a02fdfac77b": "Misslyckades",
   "2643898bbb930f1f": "Stoppad",
@@ -6287,11 +6293,9 @@
   "d6343ed2791eda97": "{count, plural, one {{count} återstår} other {{count} återstår}}",
   "57d789fac3653dc5": "Stoppade",
   "2a7a99dc5969dccc": "Aktiva",
-  "f4e7c94cb69a9b66": "Uppdateras i realtid",
   "ec3bc12b0e1fef87": "Uppgifter klara · avslutar",
   "4364e40e7a3081eb": "Slutförd",
   "f320670b89204493": "Slutförd · {done}/{total} klara",
-  "09735b0e3ab4e5b2": "Agentuppgifter",
   "f79d12a232e22bc5": "Dölj uppgiftspanelen",
   "2fae65c9adad5e28": "Uppgiftsförlopp",
   "d1b9999482deb91c": "Klara",

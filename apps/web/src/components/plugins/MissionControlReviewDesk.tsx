@@ -1,14 +1,20 @@
 import { useAtomValue } from "@effect/atom-react";
-import { scopeProjectRef, scopedThreadKey } from "@t3tools/client-runtime/environment";
+import {
+  scopeProjectRef,
+  scopedThreadKey,
+  scopeThreadRef,
+} from "@t3tools/client-runtime/environment";
 import { deriveWorkspaceMutationId } from "@t3tools/client-runtime/state/threads";
 import {
   AuthOrchestrationOperateScope,
   AuthTerminalOperateScope,
   RunId,
   type ScopedThreadRef,
+  type ThreadId,
 } from "@t3tools/contracts";
 import { useGT } from "gt-react";
 import {
+  BotIcon,
   CheckCircle2Icon,
   FileCodeIcon,
   FilesIcon,
@@ -24,6 +30,7 @@ import * as Schema from "effect/Schema";
 import { useComposerDraftStore } from "../../composerDraftStore";
 import { ComposerHandleContext } from "../../composerHandleContext";
 import { useDiffPanelStore } from "../../diffPanelStore";
+import { useMissionControlStore } from "../../missionControlStore";
 import {
   useMissionControlWindowStore,
   type MissionControlImageStreamLayout,
@@ -69,7 +76,8 @@ import {
   deriveMissionControlImageStream,
   resolveMissionControlSidebars,
 } from "./missionControlImages.logic";
-import { MissionControlTasksSidebar } from "./MissionControlTasksSidebar";
+import { deriveMissionControlSubagents } from "./missionControlSubagents.logic";
+import { MissionControlWorkSidebar } from "./MissionControlSubagentsSidebar";
 import {
   deriveMissionControlTasks,
   MISSION_CONTROL_WIDE_SPLIT_WITH_TASKS_MIN_WIDTH,
@@ -262,6 +270,7 @@ export function MissionControlReviewDesk({
       {renderState === "ready" ? (
         <ReviewDeskContent
           threadRef={threadRef}
+          instanceId={instanceId}
           active={active}
           visible={visible}
           windowWidth={windowWidth}
@@ -279,11 +288,13 @@ export function MissionControlReviewDesk({
 
 function ReviewDeskContent({
   threadRef,
+  instanceId,
   active,
   visible,
   windowWidth,
 }: {
   readonly threadRef: ScopedThreadRef;
+  readonly instanceId: string;
   readonly active: boolean;
   readonly visible: boolean;
   readonly windowWidth: number;
@@ -302,6 +313,9 @@ function ReviewDeskContent({
   );
   const setTasksOpen = useStableCallback((value: boolean) =>
     useMissionControlWindowStore.getState().setTasksOpen(threadKey, value),
+  );
+  const setSubagentsOpen = useStableCallback((value: boolean) =>
+    useMissionControlWindowStore.getState().setSubagentsOpen(threadKey, value),
   );
   const setImagesOpen = useStableCallback((value: boolean) =>
     useMissionControlWindowStore.getState().setImagesOpen(threadKey, value),
@@ -322,16 +336,19 @@ function ReviewDeskContent({
   );
   const cwd = thread?.worktreePath ?? project?.workspaceRoot;
   const taskSummary = deriveMissionControlTasks(projection?.projection ?? null, shell);
+  const subagentSummary = deriveMissionControlSubagents(projection?.projection ?? null, shell);
   const imageStream = deriveMissionControlImageStream(projection?.projection ?? null, {
     shell,
     workspaceRoot: cwd,
   });
   const sidebars = resolveMissionControlSidebars({
     hasTasks: taskSummary !== null,
+    hasSubagents: subagentSummary !== null,
     hasImages: imageStream !== null,
     imagesStreaming: imageStream?.phase === "streaming",
     windowWidth,
     savedTasksOpen: saved?.tasksOpen,
+    savedSubagentsOpen: saved?.subagentsOpen,
     savedImagesOpen: saved?.imagesOpen,
     preferredSidebar: saved?.preferredSidebar,
   });
@@ -344,8 +361,14 @@ function ReviewDeskContent({
         ? MISSION_CONTROL_WIDE_SPLIT_WITH_TASKS_MIN_WIDTH
         : 1000);
   const conversationVisible = visible && (pane === "conversation" || wide);
+  const subagentsPanelId = `${paneId}-subagents-sidebar`;
   const tasksPanelId = `${paneId}-tasks-sidebar`;
   const imagesPanelId = `${paneId}-images-sidebar`;
+  const toggleSubagentsSidebar = () => {
+    const next = !sidebars.subagentsVisible;
+    setSubagentsOpen(next);
+    if (next) setPreferredSidebar("subagents");
+  };
   const toggleTasksSidebar = () => {
     const next = !sidebars.tasksVisible;
     setTasksOpen(next);
@@ -355,6 +378,11 @@ function ReviewDeskContent({
     const next = !sidebars.imagesVisible;
     setImagesOpen(next);
     if (next) setPreferredSidebar("images");
+  };
+  const inspectSubagent = (childThreadId: ThreadId) => {
+    useMissionControlStore
+      .getState()
+      .inspectThread(scopeThreadRef(threadRef.environmentId, childThreadId), instanceId);
   };
   const items = useQuietThreadVisibleTurnItems(threadRef);
   const checkpoints = useThreadCheckpointSummaries(threadRef);
@@ -479,7 +507,7 @@ function ReviewDeskContent({
             </button>
           ))}
         </div>
-        {imageStream || taskSummary ? (
+        {imageStream || subagentSummary || taskSummary ? (
           <div className="flex shrink-0 items-center gap-1 py-1">
             {imageStream ? (
               <Button
@@ -506,6 +534,31 @@ function ReviewDeskContent({
                     ? `${imageStream.images.length}+`
                     : imageStream.images.length}
                 </span>
+              </Button>
+            ) : null}
+            {subagentSummary ? (
+              <Button
+                size="xs"
+                variant={sidebars.subagentsVisible ? "secondary" : "ghost"}
+                aria-expanded={sidebars.subagentsVisible}
+                aria-controls={subagentsPanelId}
+                data-testid="mission-control-subagents-toggle"
+                onClick={toggleSubagentsSidebar}
+              >
+                <BotIcon
+                  className={
+                    subagentSummary.phase === "running"
+                      ? "text-primary"
+                      : subagentSummary.phase === "completed"
+                        ? "text-success"
+                        : subagentSummary.phase === "failed"
+                          ? "text-destructive"
+                          : undefined
+                  }
+                  aria-hidden
+                />
+                <span>{gt("Subagents")}</span>
+                <span className="font-mono tabular-nums">{subagentSummary.total}</span>
               </Button>
             ) : null}
             {taskSummary ? (
@@ -763,13 +816,25 @@ function ReviewDeskContent({
             onClose={() => setImagesOpen(false)}
           />
         ) : null}
-        {taskSummary && sidebars.tasksVisible ? (
-          <MissionControlTasksSidebar
-            id={tasksPanelId}
-            summary={taskSummary}
+        {(subagentSummary && sidebars.subagentsVisible) ||
+        (taskSummary && sidebars.tasksVisible) ? (
+          <MissionControlWorkSidebar
+            threadRef={threadRef}
+            subagentsPanelId={subagentsPanelId}
+            tasksPanelId={tasksPanelId}
+            subagentSummary={subagentSummary}
+            taskSummary={taskSummary}
+            subagentsVisible={sidebars.subagentsVisible}
+            tasksVisible={sidebars.tasksVisible}
             mode={sidebars.tasksMode}
             wide={windowWidth >= MISSION_CONTROL_WIDE_SPLIT_WITH_TASKS_MIN_WIDTH}
-            onClose={() => setTasksOpen(false)}
+            onCloseSubagents={() => setSubagentsOpen(false)}
+            onCloseTasks={() => setTasksOpen(false)}
+            onCloseAll={() => {
+              if (sidebars.subagentsVisible) setSubagentsOpen(false);
+              if (sidebars.tasksVisible) setTasksOpen(false);
+            }}
+            onInspectSubagent={inspectSubagent}
           />
         ) : null}
       </div>
