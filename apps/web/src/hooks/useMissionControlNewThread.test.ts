@@ -43,7 +43,7 @@ const savedRef = scopeThreadRef(local, ThreadId.make("saved-thread"));
 function setup() {
   useComposerDraftStore.setState(useComposerDraftStore.getInitialState());
   useMissionControlStore.setState(useMissionControlStore.getInitialState());
-  useMissionControlWindowStore.setState({ byThreadKey: {} });
+  useMissionControlWindowStore.setState({ byThreadKey: {}, newThreadPlacement: {} });
   testState.serverThreadExists = false;
   testState.createDraft.mockReset();
   testState.createDraft.mockImplementation(async (projectRef) => {
@@ -170,5 +170,32 @@ describe("Mission Control new threads", () => {
     expect(
       useMissionControlWindowStore.getState().byThreadKey[scopedThreadKey(retriedRef)]?.bounds,
     ).toEqual(bounds);
+  });
+
+  it("restores the last saved new-thread modal size, position, and maximize state for new and reopened closed drafts", async () => {
+    const openDraft = setup();
+    const savedBounds = { x: 96, y: 52, width: 1080, height: 720 };
+    useMissionControlWindowStore.getState().setNewThreadBounds(savedBounds);
+    useMissionControlWindowStore.getState().setNewThreadMaximized(true);
+
+    const otherOpened = await openDraft(otherProject, "plugin-instance");
+    const otherKey = scopedThreadKey(scopeThreadRef(local, otherOpened!.threadId));
+    expect(useMissionControlWindowStore.getState().byThreadKey[otherKey]).toMatchObject({
+      bounds: savedBounds,
+      maximized: true,
+    });
+
+    const updatedBounds = { x: 40, y: 28, width: 820, height: 580 };
+    useMissionControlWindowStore.getState().setNewThreadBounds(updatedBounds);
+    useMissionControlWindowStore.getState().setNewThreadMaximized(false);
+    useMissionControlStore.getState().closeWindow(otherKey);
+
+    await openDraft(project, "reopened-instance");
+    expect(
+      useMissionControlWindowStore.getState().byThreadKey[scopedThreadKey(savedRef)],
+    ).toMatchObject({
+      bounds: updatedBounds,
+      maximized: false,
+    });
   });
 });

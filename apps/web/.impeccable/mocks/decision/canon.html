@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phoenix — Category Standard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1440px;height:900px;overflow:hidden;background:#0F1012;color:#F4F4F5;font-family:"Inter",system-ui,sans-serif;font-size:13px;line-height:1.45}
+  .shell{display:grid;grid-template-columns:268px 1fr;width:1440px;height:900px}
+  .sidebar{background:#16171B;border-right:1px solid #24262C;display:flex;flex-direction:column;justify-content:space-between;padding:16px}
+  .brand{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid #24262C}
+  .brand-name{font-size:22px;font-weight:700;letter-spacing:-0.02em}
+  .new-btn{margin-top:14px;background:#202228;border:1px solid #2E313A;color:#F4F4F5;border-radius:8px;padding:8px 12px;font-weight:600;display:flex;justify-content:space-between}
+  .sec{margin-top:18px;font-size:11px;font-weight:600;color:#8E929B;margin-bottom:6px;display:flex;justify-content:space-between}
+  .row{padding:8px 10px;border-radius:7px;display:flex;justify-content:space-between;font-size:12.5px;color:#D4D4D8}
+  .row.active{background:#23252C;color:#F4F4F5;font-weight:600}
+  .host{background:#1B1D23;border:1px solid #24262C;border-radius:8px;padding:8px 10px;margin-top:8px}
+  .main{display:grid;grid-template-rows:56px 1fr 124px;background:#0F1012}
+  .hdr{display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid #24262C}
+  .pill{font-family:"JetBrains Mono",monospace;font-size:11px;background:#1B1D23;border:1px solid #2A2D36;border-radius:999px;padding:4px 10px;color:#A1A1AA}
+  .timeline{padding:26px 56px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+  .user{align-self:flex-end;max-width:650px;background:#1B1D23;border:1px solid #2A2D36;border-radius:10px;padding:12px 16px}
+  .agent{max-width:840px}
+  .diff{margin-top:12px;border:1px solid #24262C;border-radius:8px;background:#141519;font-family:"JetBrains Mono",monospace;font-size:12px;overflow:hidden}
+  .dline{padding:4px 12px;display:grid;grid-template-columns:30px 1fr}
+  .dline.del{background:rgba(239,68,68,.12);color:#FCA5A5}
+  .dline.add{background:rgba(34,197,94,.12);color:#86EFAC}
+  .comp-wrap{padding:14px 56px 20px;border-top:1px solid #24262C}
+  .composer{background:#16171B;border:1px solid #2A2D36;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  .comp-bar{display:flex;justify-content:space-between;align-items:center}
+  .send{background:#F59E0B;color:#0F1012;font-weight:700;padding:6px 16px;border-radius:7px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div>
+      <div class="brand">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+          <rect width="28" height="28" rx="7" fill="#F59E0B"/>
+          <path d="M8 19C8 13.5 12 9 19 8C16.5 11.5 16 14 17 17C14 16 11.5 17 8 19Z" fill="#0F1012"/>
+        </svg>
+        <span class="brand-name">Phoenix</span>
+      </div>
+      <div class="new-btn"><span>New thread</span><span style="color:#8E929B">⌘N</span></div>
+      <div class="sec"><span>phoenix-code</span><span>main</span></div>
+      <div class="row active"><span>Rebrand shell &amp; icons</span><span style="color:#8E929B">now</span></div>
+      <div class="row"><span>Local vision probe fallback</span><span style="color:#8E929B">14m</span></div>
+      <div class="row"><span>Fix SQLite WAL contention</span><span style="color:#8E929B">1h</span></div>
+      <div class="row"><span>Audit zero-telemetry strip</span><span style="color:#8E929B">3h</span></div>
+    </div>
+    <div>
+      <div class="host">
+        <div style="display:flex;justify-content:space-between;font-weight:600;font-size:12px"><span>spark5 · GLM-5-Flash</span><span style="color:#22C55E">84 t/s</span></div>
+        <div style="font-size:11px;color:#8E929B;margin-top:2px">Local · Reads images · 128k</div>
+      </div>
+      <div class="host" style="opacity:.5">
+        <div style="display:flex;justify-content:space-between;font-weight:600;font-size:12px"><span>mac-studio · Qwen-32B</span><span>Offline</span></div>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="hdr">
+      <div style="font-weight:600;font-size:14px">phoenix-code / Rebrand shell &amp; icons</div>
+      <div style="display:flex;gap:8px"><span class="pill">spark5 · GLM-5-Flash · Local</span><span class="pill">0.42s TTFT · 84 tok/s</span></div>
+    </header>
+    <section class="timeline">
+      <div class="user">Replace the incumbent T3 wordmark and default theme tokens with the new Phoenix palette across <code>branding.ts</code> and <code>themePalettes.ts</code>.</div>
+      <div class="agent">
+        <div style="font-size:11px;color:#8E929B;margin-bottom:6px">Phoenix · Pi · spark5</div>
+        <div>Updated <code>APP_BASE_NAME</code> to <strong>Phoenix</strong> and switched the primary accent to warm amber on neutral charcoal surfaces.</div>
+        <div class="diff">
+          <div class="dline del"><span>22</span><span>- export const APP_BASE_NAME = injectedDesktopAppBranding?.baseName ?? "M3 Code";</span></div>
+          <div class="dline add"><span>22</span><span>+ export const APP_BASE_NAME = injectedDesktopAppBranding?.baseName ?? "Phoenix";</span></div>
+          <div class="dline del"><span>33</span><span>- export const DESKTOP_DOWNLOAD_URL = "https://t3.codes/download";</span></div>
+          <div class="dline add"><span>33</span><span>+ export const DESKTOP_DOWNLOAD_URL = "";</span></div>
+        </div>
+      </div>
+    </section>
+    <footer class="comp-wrap">
+      <div class="composer">
+        <div style="color:#8E929B">Reply to Rebrand shell &amp; icons…</div>
+        <div class="comp-bar">
+          <div style="display:flex;gap:8px"><span class="pill">spark5 · GLM-5-Flash</span><span class="pill">Local models only</span></div>
+          <div class="send">Send</div>
+        </div>
+      </div>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

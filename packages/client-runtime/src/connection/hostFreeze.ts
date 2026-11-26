@@ -33,6 +33,6 @@ export function hostFreezeNotice(
               cpuCount,
             }),
           )
-        : resolve(msg("M3 Code on {host} was too busy to answer.", { host: hostLabel })),
+        : resolve(msg("Phoenix on {host} was too busy to answer.", { host: hostLabel })),
   };
 }

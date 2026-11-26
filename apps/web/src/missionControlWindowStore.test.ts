@@ -3,7 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { fitMissionControlWindow, useMissionControlWindowStore } from "./missionControlWindowStore";
 
 function resetStore() {
-  useMissionControlWindowStore.setState({ byThreadKey: {} });
+  useMissionControlWindowStore.setState({ byThreadKey: {}, newThreadPlacement: {} });
   return useMissionControlWindowStore.getState();
 }
 
@@ -64,12 +64,25 @@ describe("Mission Control window state", () => {
     };
     store.setBounds("local:thread-1", bounds);
     store.setMaximized("local:thread-1", true);
+    store.setTasksOpen("local:thread-1", false);
+    store.setImagesOpen("local:thread-1", true);
+    store.setImagesLayout("local:thread-1", "grid");
+    store.setPreferredSidebar("local:thread-1", "images");
     store.setFile("local:thread-1", file);
     store.setPane("local:thread-1", "file");
     store.setPane("remote:thread-1", "terminal");
     await reloadStore();
     expect(useMissionControlWindowStore.getState().byThreadKey).toEqual({
-      "local:thread-1": { bounds, maximized: true, file, pane: "file" },
+      "local:thread-1": {
+        bounds,
+        maximized: true,
+        tasksOpen: false,
+        imagesOpen: true,
+        imagesLayout: "grid",
+        preferredSidebar: "images",
+        file,
+        pane: "file",
+      },
       "remote:thread-1": { pane: "terminal" },
     });
     useMissionControlWindowStore.getState().setMaximized("local:thread-1", false);
@@ -111,6 +124,61 @@ describe("Mission Control window state", () => {
     });
     expect(restored.setBounds).toBe(store.setBounds);
     expect(merge({ byThreadKey: null }, store).byThreadKey).toEqual({});
+    expect(
+      merge(
+        {
+          byThreadKey: null,
+          newThreadPlacement: {
+            bounds: { x: 24, y: 36, width: 720, height: 520 },
+            maximized: "yes",
+          },
+        },
+        store,
+      ).newThreadPlacement,
+    ).toEqual({ bounds: { x: 24, y: 36, width: 720, height: 520 } });
+    expect(
+      merge(
+        {
+          newThreadPlacement: {
+            bounds: { x: -10, y: 20, width: 720, height: 520 },
+            maximized: true,
+          },
+        },
+        store,
+      ).newThreadPlacement,
+    ).toEqual({ maximized: true });
+  });
+
+  it("persists and applies saved new-thread modal placement across storage reloads", async () => {
+    const store = resetStore();
+    const bounds = { x: 64, y: 48, width: 1020, height: 700 };
+    store.applyNewThreadPlacement("local:untouched");
+    expect(useMissionControlWindowStore.getState().byThreadKey["local:untouched"]).toBeUndefined();
+
+    store.setNewThreadBounds({ x: -1, y: 0, width: 500, height: 400 });
+    expect(useMissionControlWindowStore.getState().newThreadPlacement).toEqual({});
+
+    store.setNewThreadBounds(bounds);
+    store.setNewThreadMaximized(true);
+    await reloadStore();
+    expect(useMissionControlWindowStore.getState().newThreadPlacement).toEqual({
+      bounds,
+      maximized: true,
+    });
+
+    useMissionControlWindowStore.getState().applyNewThreadPlacement("local:next-draft");
+    expect(useMissionControlWindowStore.getState().byThreadKey["local:next-draft"]).toEqual({
+      bounds,
+      maximized: true,
+    });
+
+    useMissionControlWindowStore.getState().setNewThreadMaximized(false);
+    await reloadStore();
+    useMissionControlWindowStore.getState().applyNewThreadPlacement("local:next-draft");
+    expect(useMissionControlWindowStore.getState().byThreadKey["local:next-draft"]).toEqual({
+      bounds,
+      maximized: false,
+    });
   });
 
   it("keeps the 100 most recently changed windows across storage reloads", async () => {

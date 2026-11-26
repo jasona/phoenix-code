@@ -68,7 +68,7 @@ import { cn } from "~/lib/utils";
 import { TimelineSystemDivider } from "./TimelineSystemDivider";
 import { subagentResumedSince } from "./V2LifecycleRow.logic";
 import { Button, InlineButton } from "../ui/button";
-import { M3Wordmark } from "../M3Wordmark";
+import { PhoenixMark } from "../PhoenixMark";
 
 export type { HandoffTimelineRun } from "@t3tools/client-runtime/handoff";
 
@@ -148,7 +148,7 @@ export function V2LifecycleRow(props: {
     return (
       <WorkLogRow
         data-v2-item-type={item.type}
-        icon={<M3Wordmark className="size-4 text-icon-muted" aria-hidden />}
+        icon={<PhoenixMark variant="mono" className="size-4 text-icon-muted" aria-hidden />}
         label={
           item.title ? (
             <T>

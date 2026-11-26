@@ -1838,15 +1838,11 @@ const WsPluginsInstallRpc = Rpc.make(WS_METHODS.pluginsInstall, {
   error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
 });
 const WsPluginsWatchRpc = Rpc.make(WS_METHODS.pluginsWatch, {
-  payload: PluginViewInput,
-  success: Schema.Unknown,
-  stream: true,
+  payload: PluginViewInput, success: Schema.Unknown, stream: true,
   error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
 });
 const WsPluginsSubscribeRpc = Rpc.make(WS_METHODS.pluginsSubscribe, {
-  payload: Schema.Struct({ threadId: ThreadId }),
-  success: PluginLaunch,
-  stream: true,
+  payload: Schema.Struct({ threadId: ThreadId }), success: PluginLaunch, stream: true,
   error: EnvironmentAuthorizationError,
 });
 const WsPluginsHostRpc = Rpc.make(WS_METHODS.pluginsHost, {

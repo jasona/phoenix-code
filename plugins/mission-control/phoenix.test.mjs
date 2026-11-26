@@ -7,15 +7,19 @@ NodeTest.test("partial host updates preserve theme and hidden workspace state", 
   const listeners = new Map();
   const parent = { postMessage() {} };
   const document = { documentElement: { dataset: {}, style: { setProperty() {} } } };
+  const events = [];
   const window = {
     addEventListener: (type, listener) => listeners.set(type, listener),
-    dispatchEvent() {},
+    dispatchEvent(event) {
+      events.push(event);
+    },
   };
   NodeVM.runInNewContext(NodeFS.readFileSync(new URL("./ui/phoenix.js", import.meta.url), "utf8"), {
     parent,
     document,
     window,
     Event,
+    CustomEvent,
     setTimeout: () => 1,
     clearTimeout() {},
   });
@@ -53,6 +57,18 @@ NodeTest.test("partial host updates preserve theme and hidden workspace state", 
   NodeAssert.equal(document.documentElement.dataset.theme, "light");
   receive({ method: "ui/notifications/host-context-changed", params: { "phoenix/visible": true } });
   NodeAssert.equal(window.phoenix.visible, true);
+  receive({
+    method: "ui/notifications/host-context-changed",
+    params: {
+      "phoenix/liveActivity": true,
+      "phoenix/activity": { threadId: "selected", entries: [{ id: "streaming", body: "partial" }] },
+    },
+  });
+  NodeAssert.equal(window.phoenix.activity.available, true);
+  NodeAssert.equal(events.at(-1).type, "phoenix-activity");
+  NodeAssert.equal(events.at(-1).detail.entries[0].body, "partial");
+  receive({ method: "ui/notifications/host-context-changed", params: { theme: "light" } });
+  NodeAssert.equal(window.phoenix.activity.available, true);
   NodeAssert.equal(document.documentElement.dataset.theme, "light");
   receive({
     method: "ui/notifications/host-context-changed",

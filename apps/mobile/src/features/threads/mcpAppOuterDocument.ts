@@ -24,3 +24,4 @@ if(plain)send(e.data);else if(waiting<256){unconfirmed[probe]=e.data;waiting+=1;
 window.__t3McpAppReceive=function(m){if(!live)return;if(port)port.postMessage({message:m,origin:location.origin});else if(plain&&frame.contentWindow)frame.contentWindow.postMessage(m,"*");};
 frame.src=${JSON.stringify(src).replace(/</g, "\\u003c")};})();</script></body></html>`;
 }
+

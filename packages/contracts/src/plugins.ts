@@ -1,5 +1,6 @@
 import { ModelSelection } from "./modelSelection.ts";
 import * as Schema from "effect/Schema";
+import { OrchestrationV2TurnItemStatus } from "./orchestrationV2.ts";
 import { IsoDateTime, ProjectId, RunId, RuntimeRequestId, ThreadId } from "./baseSchemas.ts";
 import { TrimmedNonEmptyString } from "./baseSchemas.ts";
 
@@ -182,6 +183,37 @@ export const MissionControlRequest = Schema.Union([
   }),
 ]);
 export type MissionControlRequest = typeof MissionControlRequest.Type;
+
+export const MissionControlActivityOperation = Schema.Struct({
+  type: Schema.Literal("missionControlActivity"),
+  threadId: Schema.NullOr(ThreadId),
+});
+
+export const MissionControlActivitySnapshot = Schema.Struct({
+  threadId: ThreadId,
+  status: Schema.Literals(["loading", "live", "error"]),
+  running: Schema.Boolean,
+  entries: Schema.Array(
+    Schema.Struct({
+      id: Schema.String,
+      kind: Schema.Literals([
+        "user",
+        "assistant",
+        "reasoning",
+        "tool",
+        "plan",
+        "request",
+        "notice",
+      ]),
+      label: Schema.String,
+      body: Schema.String,
+      status: OrchestrationV2TurnItemStatus,
+      time: Schema.String,
+    }),
+  ),
+  truncated: Schema.Boolean,
+});
+export type MissionControlActivitySnapshot = typeof MissionControlActivitySnapshot.Type;
 
 export const PluginHostInput = Schema.Struct({
   ...PluginViewInput.fields,

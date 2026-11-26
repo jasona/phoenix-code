@@ -36,7 +36,7 @@ export function MultipleAccountsNote({
       <AlertDescription>
         <p>
           <T>
-            We do not recommend managing multiple <Var>{providerName}</Var> accounts in M3 Code.{" "}
+            We do not recommend managing multiple <Var>{providerName}</Var> accounts in Phoenix.{" "}
             <a
               href={MULTIPLE_ACCOUNTS_FAQ_URL}
               target="_blank"

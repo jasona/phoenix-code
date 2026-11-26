@@ -641,7 +641,7 @@ export function BranchToolbarBranchSelector({
   useEffect(() => {
     if (projectCloneDone) refreshStaleRefs();
   }, [projectCloneDone]);
-  // A checkout made outside M3 Code, such as a clone finishing, leaves refs listed before it.
+  // A checkout made outside Phoenix, such as a clone finishing, leaves refs listed before it.
   const statusBranch = branchStatusQuery.data?.refName ?? null;
   const refreshRefsMissingStatusBranch = useEffectEvent((branch: string | null) => {
     if (branch === null || branchCwd === null) return;

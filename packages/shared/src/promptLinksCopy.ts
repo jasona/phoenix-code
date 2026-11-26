@@ -15,22 +15,22 @@ function promptLinkErrorMessage(error: PromptLinkError, resolve: MFunctionType):
   switch (error) {
     case "prompt-too-long":
       return resolve(
-        msg("This prompt is longer than {maxLength} characters, so M3 Code did not open it.", {
+        msg("This prompt is longer than {maxLength} characters, so Phoenix did not open it.", {
           maxLength: PROMPT_LINK_MAX_PROMPT_LENGTH.toLocaleString("en-US"),
         }),
       );
     case "prompt-only-hidden":
       return resolve(
         msg(
-          "This prompt had only hidden characters, so it may be malicious. M3 Code did not open it.",
+          "This prompt had only hidden characters, so it may be malicious. Phoenix did not open it.",
         ),
       );
     case "unreadable-pull-request":
-      return resolve(msg("This link names a pull request M3 Code cannot read."));
+      return resolve(msg("This link names a pull request Phoenix cannot read."));
     case "missing-prompt":
       return resolve(msg("This link has no prompt."));
     case "unreadable-repository":
-      return resolve(msg("This link names a repository M3 Code cannot read."));
+      return resolve(msg("This link names a repository Phoenix cannot read."));
   }
 }
 

@@ -8,7 +8,16 @@ import {
   type ScopedThreadRef,
 } from "@t3tools/contracts";
 import { useGT } from "gt-react";
-import { FileCodeIcon, FilesIcon, GlobeIcon, MessageSquareIcon, TerminalIcon } from "lucide-react";
+import {
+  CheckCircle2Icon,
+  FileCodeIcon,
+  FilesIcon,
+  GlobeIcon,
+  ImagesIcon,
+  ListTodoIcon,
+  MessageSquareIcon,
+  TerminalIcon,
+} from "lucide-react";
 import { lazy, Suspense, useEffect, useId, useState } from "react";
 import * as Schema from "effect/Schema";
 
@@ -17,6 +26,8 @@ import { ComposerHandleContext } from "../../composerHandleContext";
 import { useDiffPanelStore } from "../../diffPanelStore";
 import {
   useMissionControlWindowStore,
+  type MissionControlImageStreamLayout,
+  type MissionControlSidebarKind,
   type MissionControlWindowPane,
 } from "../../missionControlWindowStore";
 import { useStableCallback } from "../../hooks/useStableCallback";
@@ -53,6 +64,16 @@ import { useOpenThreadFamily } from "../ThreadRouteView";
 import { BackgroundThreadContext, HiddenThreadContext } from "../chat/backgroundThread";
 import { useThreadTerminalActions } from "../terminal/useThreadTerminalActions";
 import { Button } from "../ui/button";
+import { MissionControlImageStreamSidebar } from "./MissionControlImageStreamSidebar";
+import {
+  deriveMissionControlImageStream,
+  resolveMissionControlSidebars,
+} from "./missionControlImages.logic";
+import { MissionControlTasksSidebar } from "./MissionControlTasksSidebar";
+import {
+  deriveMissionControlTasks,
+  MISSION_CONTROL_WIDE_SPLIT_WITH_TASKS_MIN_WIDTH,
+} from "./missionControlTasks.logic";
 
 const DiffPanel = lazy(() => import("../DiffPanel"));
 const FilePreviewPanel = lazy(() => import("../files/FilePreviewPanel"));
@@ -74,13 +95,13 @@ export function MissionControlReviewDesk({
   instanceId,
   active,
   visible,
-  wide,
+  windowWidth,
 }: {
   readonly threadRef: ScopedThreadRef;
   readonly instanceId: string;
   readonly active: boolean;
   readonly visible: boolean;
-  readonly wide: boolean;
+  readonly windowWidth: number;
 }) {
   const gt = useGT();
   const shell = useQuietThreadShell(threadRef);
@@ -239,7 +260,12 @@ export function MissionControlReviewDesk({
         </p>
       )}
       {renderState === "ready" ? (
-        <ReviewDeskContent threadRef={threadRef} active={active} visible={visible} wide={wide} />
+        <ReviewDeskContent
+          threadRef={threadRef}
+          active={active}
+          visible={visible}
+          windowWidth={windowWidth}
+        />
       ) : (
         <p className="p-6 text-sm text-muted-foreground" role="status">
           {renderState === "loading"
@@ -255,12 +281,12 @@ function ReviewDeskContent({
   threadRef,
   active,
   visible,
-  wide,
+  windowWidth,
 }: {
   readonly threadRef: ScopedThreadRef;
   readonly active: boolean;
   readonly visible: boolean;
-  readonly wide: boolean;
+  readonly windowWidth: number;
 }) {
   const gt = useGT();
   const paneId = useId();
@@ -274,9 +300,20 @@ function ReviewDeskContent({
   const setFile = useStableCallback((value: DeskFile) =>
     useMissionControlWindowStore.getState().setFile(threadKey, value),
   );
+  const setTasksOpen = useStableCallback((value: boolean) =>
+    useMissionControlWindowStore.getState().setTasksOpen(threadKey, value),
+  );
+  const setImagesOpen = useStableCallback((value: boolean) =>
+    useMissionControlWindowStore.getState().setImagesOpen(threadKey, value),
+  );
+  const setImagesLayout = useStableCallback((value: MissionControlImageStreamLayout) =>
+    useMissionControlWindowStore.getState().setImagesLayout(threadKey, value),
+  );
+  const setPreferredSidebar = useStableCallback((value: MissionControlSidebarKind) =>
+    useMissionControlWindowStore.getState().setPreferredSidebar(threadKey, value),
+  );
   const filePath = file?.kind === "file" ? file.relativePath : null;
   const [pendingFiles, setPendingFiles] = useState<ReadonlySet<string>>(new Set());
-  const conversationVisible = visible && (pane === "conversation" || wide);
   const shell = useQuietThreadShell(threadRef);
   const projection = useQuietThreadProjection(threadRef);
   const thread = shell ?? projection?.projection.thread ?? null;
@@ -284,6 +321,41 @@ function ReviewDeskContent({
     thread ? scopeProjectRef(threadRef.environmentId, thread.projectId) : null,
   );
   const cwd = thread?.worktreePath ?? project?.workspaceRoot;
+  const taskSummary = deriveMissionControlTasks(projection?.projection ?? null, shell);
+  const imageStream = deriveMissionControlImageStream(projection?.projection ?? null, {
+    shell,
+    workspaceRoot: cwd,
+  });
+  const sidebars = resolveMissionControlSidebars({
+    hasTasks: taskSummary !== null,
+    hasImages: imageStream !== null,
+    imagesStreaming: imageStream?.phase === "streaming",
+    windowWidth,
+    savedTasksOpen: saved?.tasksOpen,
+    savedImagesOpen: saved?.imagesOpen,
+    preferredSidebar: saved?.preferredSidebar,
+  });
+  const imagesLayout = saved?.imagesLayout ?? "stream";
+  const wide =
+    windowWidth >=
+    (sidebars.dockedSidebarCount >= 2
+      ? 1480
+      : sidebars.dockedSidebarCount === 1
+        ? MISSION_CONTROL_WIDE_SPLIT_WITH_TASKS_MIN_WIDTH
+        : 1000);
+  const conversationVisible = visible && (pane === "conversation" || wide);
+  const tasksPanelId = `${paneId}-tasks-sidebar`;
+  const imagesPanelId = `${paneId}-images-sidebar`;
+  const toggleTasksSidebar = () => {
+    const next = !sidebars.tasksVisible;
+    setTasksOpen(next);
+    if (next) setPreferredSidebar("tasks");
+  };
+  const toggleImagesSidebar = () => {
+    const next = !sidebars.imagesVisible;
+    setImagesOpen(next);
+    if (next) setPreferredSidebar("images");
+  };
   const items = useQuietThreadVisibleTurnItems(threadRef);
   const checkpoints = useThreadCheckpointSummaries(threadRef);
   const status = useThreadStatus(threadRef);
@@ -365,48 +437,104 @@ function ReviewDeskContent({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div
-        role="tablist"
-        aria-label={gt("Review tools")}
-        className="flex shrink-0 overflow-x-auto border-b border-border px-2"
-        onKeyDown={(event) => {
-          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-          event.preventDefault();
-          const index = tabs.findIndex((tab) => tab.id === pane);
-          const next =
-            event.key === "Home"
-              ? 0
-              : event.key === "End"
-                ? tabs.length - 1
-                : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
-          const tab = tabs[next];
-          if (tab) setPane(tab.id);
-          event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
-        }}
-      >
-        {tabs.map((tab) => (
-          <button
-            type="button"
-            role="tab"
-            key={tab.id}
-            id={`${paneId}-${tab.id}-tab`}
-            aria-selected={pane === tab.id}
-            aria-controls={`${paneId}-${tab.id}-panel`}
-            tabIndex={pane === tab.id ? 0 : -1}
-            onClick={() => setPane(tab.id)}
-            className={cn(
-              "flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-xs focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-              pane === tab.id
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            <tab.icon className="size-3.5" aria-hidden />
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-2">
+        <div
+          role="tablist"
+          aria-label={gt("Review tools")}
+          className="flex min-w-0 flex-1 overflow-x-auto"
+          onKeyDown={(event) => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const index = tabs.findIndex((tab) => tab.id === pane);
+            const next =
+              event.key === "Home"
+                ? 0
+                : event.key === "End"
+                  ? tabs.length - 1
+                  : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+            const tab = tabs[next];
+            if (tab) setPane(tab.id);
+            event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+          }}
+        >
+          {tabs.map((tab) => (
+            <button
+              type="button"
+              role="tab"
+              key={tab.id}
+              id={`${paneId}-${tab.id}-tab`}
+              aria-selected={pane === tab.id}
+              aria-controls={`${paneId}-${tab.id}-panel`}
+              tabIndex={pane === tab.id ? 0 : -1}
+              onClick={() => setPane(tab.id)}
+              className={cn(
+                "flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-xs focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                pane === tab.id
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              <tab.icon className="size-3.5" aria-hidden />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {imageStream || taskSummary ? (
+          <div className="flex shrink-0 items-center gap-1 py-1">
+            {imageStream ? (
+              <Button
+                size="xs"
+                variant={sidebars.imagesVisible ? "secondary" : "ghost"}
+                aria-expanded={sidebars.imagesVisible}
+                aria-controls={imagesPanelId}
+                data-testid="mission-control-images-toggle"
+                onClick={toggleImagesSidebar}
+              >
+                <ImagesIcon
+                  className={
+                    imageStream.phase === "streaming" || imageStream.phase === "active"
+                      ? "text-primary"
+                      : imageStream.phase === "complete"
+                        ? "text-success"
+                        : undefined
+                  }
+                  aria-hidden
+                />
+                <span>{gt("Images")}</span>
+                <span className="font-mono tabular-nums">
+                  {imageStream.pending.length > 0
+                    ? `${imageStream.images.length}+`
+                    : imageStream.images.length}
+                </span>
+              </Button>
+            ) : null}
+            {taskSummary ? (
+              <Button
+                size="xs"
+                variant={sidebars.tasksVisible ? "secondary" : "ghost"}
+                aria-expanded={sidebars.tasksVisible}
+                aria-controls={tasksPanelId}
+                data-testid="mission-control-tasks-toggle"
+                onClick={toggleTasksSidebar}
+              >
+                {taskSummary.phase === "completed" ? (
+                  <CheckCircle2Icon className="text-success" aria-hidden />
+                ) : (
+                  <ListTodoIcon
+                    className={taskSummary.phase === "running" ? "text-primary" : undefined}
+                    aria-hidden
+                  />
+                )}
+                <span>{gt("Tasks")}</span>
+                <span className="font-mono tabular-nums">
+                  {taskSummary.completed}/{taskSummary.total}
+                </span>
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <div
           data-side-chat-pane
           role="tabpanel"
@@ -621,6 +749,29 @@ function ReviewDeskContent({
             </Suspense>
           )}
         </div>
+        {imageStream && sidebars.imagesVisible ? (
+          <MissionControlImageStreamSidebar
+            id={imagesPanelId}
+            threadRef={threadRef}
+            workspaceRoot={cwd}
+            workspaceMutationId={workspace.revision}
+            summary={imageStream}
+            layout={imagesLayout}
+            mode={sidebars.imagesMode}
+            wide={windowWidth >= MISSION_CONTROL_WIDE_SPLIT_WITH_TASKS_MIN_WIDTH}
+            onLayoutChange={setImagesLayout}
+            onClose={() => setImagesOpen(false)}
+          />
+        ) : null}
+        {taskSummary && sidebars.tasksVisible ? (
+          <MissionControlTasksSidebar
+            id={tasksPanelId}
+            summary={taskSummary}
+            mode={sidebars.tasksMode}
+            wide={windowWidth >= MISSION_CONTROL_WIDE_SPLIT_WITH_TASKS_MIN_WIDTH}
+            onClose={() => setTasksOpen(false)}
+          />
+        ) : null}
       </div>
     </div>
   );

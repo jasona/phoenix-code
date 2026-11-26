@@ -61,7 +61,7 @@ export function useInferenceStopBannerItem(
     variant: "warning",
     icon: <OctagonPauseIcon />,
     title: TITLES[stop.reason],
-    description: `${stop.model} on ${stop.serverId} ${WHY[stop.reason]}, so M3 Code stopped it and freed the server.`,
+    description: `${stop.model} on ${stop.serverId} ${WHY[stop.reason]}, so Phoenix stopped it and freed the server.`,
     actions: (
       <>
         <Button size="xs" variant="ghost" onClick={onContinue}>

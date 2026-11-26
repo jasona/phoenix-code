@@ -32,7 +32,7 @@ export function orchestrationProtocolCompatibilityError(
     : new ConnectionBlockedError({
         reason: "unsupported",
         ...translatableDetail(
-          msg("This client requires a newer server. Update M3 Code on {host} to connect.", {
+          msg("This client requires a newer server. Update Phoenix on {host} to connect.", {
             host: descriptor.label,
           }),
         ),

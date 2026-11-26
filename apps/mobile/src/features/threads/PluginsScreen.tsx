@@ -4,6 +4,10 @@ import { EnvironmentId, ThreadId, PluginHostInput, type PluginLaunch } from "@t3
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { isMissionControlDraftOperation } from "@t3tools/client-runtime/plugins/mission-control-drafts";
 import {
+  isMissionControlActivityOperation,
+  projectMissionControlActivity,
+} from "@t3tools/client-runtime/plugins/mission-control-activity";
+import {
   makeMcpAppHost,
   mcpAppStyleVariables,
   type McpAppHost,
@@ -31,6 +35,10 @@ import { scopedThreadKey } from "../../lib/scopedEntities";
 import { useOpenLinkedThread } from "./useOpenLinkedThread";
 import { outerDocument } from "./mcpAppOuterDocument";
 import { missionControlDrafts } from "../../state/mission-control-drafts";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { environmentThreadDetails } from "../../state/threads";
+import { useAppForeground } from "../../lib/appState";
+import { m } from "../../i18n/messages";
 
 const Opened = Schema.Struct({
   html: Schema.String,
@@ -175,6 +183,11 @@ function PluginDocument({
   const webView = useRef<WebView<object> | null>(null);
   const host = useRef<McpAppHost | null>(null);
   const [failed, setFailed] = useState(false);
+  const foreground = useAppForeground();
+  const [activityThreadId, setActivityThreadId] = useState<ThreadId | null>(null);
+  const activity = useRef<ReturnType<typeof projectMissionControlActivity> | null>(null);
+  const liveActivityAllowed =
+    opened.pluginId === "mission-control" && opened.data.capabilities.includes("missionControl");
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const appearance = useAppearancePreferences();
   const theme = mobileHtmlRenderTheme({
@@ -184,7 +197,16 @@ function PluginDocument({
     systemColors: appearance.systemColorsActive,
     platform: Platform.OS,
   });
-  const live = useEffectEvent(() => ({ theme, thread, request, hostRequest, dimensions }));
+  const live = useEffectEvent(() => ({
+    theme,
+    thread,
+    request,
+    hostRequest,
+    dimensions,
+    foreground,
+    failed,
+    contextError: context.error,
+  }));
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- The WebView bridge owns an external document and its server-bound instance.
   useEffect(() => {
     const environmentId = thread.environmentId;
@@ -194,6 +216,12 @@ function PluginDocument({
       return result.value;
     };
     const perform = async (raw: unknown) => {
+      if (isMissionControlActivityOperation(raw)) {
+        if (!liveActivityAllowed || live().failed || live().contextError)
+          throw new Error("This plugin cannot read live Mission Control activity.");
+        setActivityThreadId(raw.threadId);
+        return { watching: raw.threadId };
+      }
       if (isMissionControlDraftOperation(raw)) {
         if (
           opened.pluginId !== "mission-control" ||
@@ -284,6 +312,9 @@ function PluginDocument({
       phoenixRequest: perform,
       hostContext: () => ({
         theme: live().theme.appearance,
+        "phoenix/visible": live().foreground,
+        "phoenix/liveActivity": liveActivityAllowed,
+        "phoenix/activity": activity.current,
         styles: { variables: mcpAppStyleVariables(live().theme.variables) },
         displayMode: "fullscreen",
         availableDisplayModes: ["fullscreen"],
@@ -335,7 +366,54 @@ function PluginDocument({
   useEffect(() => {
     host.current?.updateHostContext();
     // oxlint-disable-next-line react/exhaustive-effect-dependencies -- The bridge reads current appearance, dimensions and thread metadata through its live callback.
-  }, [theme, thread, dimensions]);
+  }, [theme, thread, dimensions, foreground]);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- Streams the selected thread into the external plugin document without rerendering React for each text delta.
+  useEffect(() => {
+    if (!activityThreadId || !liveActivityAllowed || !foreground || failed || context.error) {
+      activity.current = null;
+      host.current?.updateHostContext();
+      return;
+    }
+    const atom = environmentThreadDetails.stateAtom({
+      environmentId: thread.environmentId,
+      threadId: activityThreadId,
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let previous = "";
+    const publish = () => {
+      timer = undefined;
+      const snapshot = projectMissionControlActivity(
+        activityThreadId,
+        appAtomRegistry.get(atom),
+        m,
+      );
+      const serialized = JSON.stringify(snapshot);
+      if (serialized === previous) return;
+      previous = serialized;
+      activity.current = snapshot;
+      host.current?.updateHostContext();
+    };
+    const unsubscribe = appAtomRegistry.subscribe(
+      atom,
+      () => {
+        if (!previous) publish();
+        else if (timer === undefined) timer = setTimeout(publish, 100);
+      },
+      { immediate: true },
+    );
+    return () => {
+      unsubscribe();
+      if (timer !== undefined) clearTimeout(timer);
+      activity.current = null;
+    };
+  }, [
+    activityThreadId,
+    liveActivityAllowed,
+    foreground,
+    failed,
+    context.error,
+    thread.environmentId,
+  ]);
   if (failed || context.error)
     return (
       <Text className="p-5">{gt("The plugin view stopped. Close it and reopen to retry.")}</Text>

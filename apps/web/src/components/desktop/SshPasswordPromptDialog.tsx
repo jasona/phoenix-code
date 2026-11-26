@@ -177,8 +177,8 @@ function ActiveSshPasswordPrompt({
               <code>
                 <Var>{target}</Var>
               </code>
-              . M3 Code passes your response to the local SSH process and keeps it in memory to
-              reuse for this host. M3 Code does not write it to disk.
+              . Phoenix passes your response to the local SSH process and keeps it in memory to
+              reuse for this host. Phoenix does not write it to disk.
             </T>
           </DialogDescription>
         </DialogHeader>

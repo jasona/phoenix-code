@@ -74,7 +74,7 @@ export function useOpenLocalWorkspace() {
           const error = squashAtomCommandFailure(result);
           throw error instanceof Error
             ? error
-            : new Error(m(msg("M3 Code could not add the project.")));
+            : new Error(m(msg("Phoenix could not add the project.")));
         }
         return projectId;
       },

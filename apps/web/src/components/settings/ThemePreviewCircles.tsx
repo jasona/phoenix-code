@@ -41,17 +41,17 @@ const STANDARD_THEME_PREVIEW_COLORS: Record<
   Readonly<Record<ThemePreviewRole, string>>
 > = {
   light: {
-    sidebar: "#fafafa",
+    sidebar: "#eae6df",
     surface: "#ffffff",
-    accentSurface: "#f4f4f5",
-    messageSurface: "#e4e4e7",
+    accentSurface: "#eae6df",
+    messageSurface: "#dfdad0",
     ...SHARED_STANDARD_THEME_PREVIEW_COLORS.light,
   },
   dark: {
-    sidebar: "#0f0f10",
-    surface: "#121212",
-    accentSurface: "#27272a",
-    messageSurface: "#27272a",
+    sidebar: "#1c1b19",
+    surface: "#242220",
+    accentSurface: "#2c2926",
+    messageSurface: "#2c2926",
     ...SHARED_STANDARD_THEME_PREVIEW_COLORS.dark,
   },
 };
@@ -69,7 +69,8 @@ export const STANDARD_GRAY_DARK_PREVIEW_COLORS: ThemeCardPreviewColors = {
 export const STANDARD_THEME_CARDS: ReadonlyArray<ThemeCardDefinition> = [
   {
     id: "default",
-    label: "M3 Code",
+    // oxlint-disable-next-line t3code/no-untranslated-copy -- product theme name
+    label: "Phoenix",
     previews: (["light", "dark"] as const).map((mode) => ({
       mode,
       colors: STANDARD_THEME_PREVIEW_COLORS[mode],

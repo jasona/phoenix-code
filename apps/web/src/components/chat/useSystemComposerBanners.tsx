@@ -148,7 +148,7 @@ export function useSystemComposerBanners(input: SystemComposerBannersInput) {
   const versionMismatchServerLabel =
     versionMismatchServerName !== null
       ? gt("{environment} server", { environment: versionMismatchServerName })
-      : gt("server", { $context: "noun, the M3 Code server" });
+      : gt("server", { $context: "noun, the Phoenix server" });
   const serverUpdateEnvironmentId = activeThreadEnvironmentId;
   const versionMismatchSelfUpdate = resolveServerSelfUpdateCapability(serverConfig);
   const versionMismatchInstallation = serverConfig?.environment.capabilities.serverInstallation;

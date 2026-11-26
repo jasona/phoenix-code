@@ -106,7 +106,7 @@ export function InferenceSettingsPanel({
       {environment?.connection.phase === "connected" && lacksInference ? (
         <SettingsSection {...searchableSetting("inference-servers")}>
           <SettingsRow
-            title={`${environment.label} runs a M3 Code server without inference servers.`}
+            title={`${environment.label} runs a Phoenix server without inference servers.`}
             description={
               environment.entry.target._tag === "SshConnectionTarget"
                 ? "Restart this app to install its own server there. It updates SSH machines each time it connects."

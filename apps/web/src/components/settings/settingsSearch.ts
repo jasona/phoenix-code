@@ -1051,7 +1051,7 @@ export const SETTINGS_SEARCH_ITEMS = [
   },
   {
     id: "uninstall-app",
-    title: msg("Uninstall M3 Code"),
+    title: msg("Uninstall Phoenix"),
     to: "/settings/about",
     desktopOnly: true,
     searchTerms: [msg("uninstall remove delete purge wipe reset completely")],
@@ -1257,7 +1257,7 @@ export const SETTINGS_SEARCH_ITEMS = [
   },
   {
     id: "pull-request-links-open-in-app",
-    title: msg("Open pull requests in M3 Code"),
+    title: msg("Open pull requests in Phoenix"),
     to: "/settings/diffs",
     searchTerms: [
       `pr commit links ${SOURCE_CONTROL_HOST_LABELS} browser external click default pull request view panel`,

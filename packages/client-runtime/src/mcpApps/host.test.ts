@@ -468,38 +468,19 @@ describe("makeMcpAppHost", () => {
   });
 });
 
+
 it("keeps Phoenix operations unavailable to ordinary MCP Apps and routes only explicitly enabled hosts", async () => {
   const ordinary = setup();
   initialize(ordinary.host);
-  ordinary.host.receive({
-    jsonrpc: "2.0",
-    id: "phoenix",
-    method: "phoenix/request",
-    params: { type: "context" },
-  });
+  ordinary.host.receive({ jsonrpc: "2.0", id: "phoenix", method: "phoenix/request", params: { type: "context" } });
   await flush();
-  expect(ordinary.sent.find((message) => message.id === "phoenix")).toMatchObject({
-    error: { code: -32601 },
-  });
+  expect(ordinary.sent.find((message) => message.id === "phoenix")).toMatchObject({ error: { code: -32601 } });
   const called: unknown[] = [];
-  const plugin = setup({
-    phoenixRequest: async (request) => {
-      called.push(request);
-      return { threadId: "bound" };
-    },
-  });
+  const plugin = setup({ phoenixRequest: async (request) => { called.push(request); return { threadId: "bound" }; } });
   initialize(plugin.host);
-  plugin.host.receive({
-    jsonrpc: "2.0",
-    id: "phoenix",
-    method: "phoenix/request",
-    params: { type: "context" },
-  });
+  plugin.host.receive({ jsonrpc: "2.0", id: "phoenix", method: "phoenix/request", params: { type: "context" } });
   await flush();
   expect(called).toEqual([{ type: "context" }]);
-  expect(plugin.sent.find((message) => message.id === "phoenix")).toMatchObject({
-    result: { threadId: "bound" },
-  });
-  plugin.host.dispose();
-  ordinary.host.dispose();
+  expect(plugin.sent.find((message) => message.id === "phoenix")).toMatchObject({ result: { threadId: "bound" } });
+  plugin.host.dispose(); ordinary.host.dispose();
 });

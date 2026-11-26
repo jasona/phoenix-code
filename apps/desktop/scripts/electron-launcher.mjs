@@ -13,7 +13,7 @@ const repoRoot = NodePath.resolve(desktopDir, "..", "..");
 const devBundleIdSuffix = NodePath.basename(repoRoot)
   .toLowerCase()
   .replaceAll(/[^a-z0-9]+/g, "");
-const APP_DISPLAY_NAME = isDevelopment ? "M3 Code (Dev)" : "M3 Code (Beta)";
+const APP_DISPLAY_NAME = isDevelopment ? "Phoenix (Dev)" : "Phoenix (Beta)";
 const APP_BUNDLE_ID = isDevelopment
   ? `com.t3tools.t3code.dev.${devBundleIdSuffix || "local"}`
   : "com.t3tools.t3code";
@@ -264,8 +264,8 @@ function resolveMacBundleInfoPlistStrings(executableName) {
     CFBundleExecutable: executableName,
     CFBundleIconFile: "icon.icns",
     NSScreenCaptureUsageDescription:
-      "M3 Code captures the active window when you use the snapshot shortcut.",
-    NSDocumentsFolderUsageDescription: "M3 Code reads project files you open in the desktop app.",
+      "Phoenix captures the active window when you use the snapshot shortcut.",
+    NSDocumentsFolderUsageDescription: "Phoenix reads project files you open in the desktop app.",
   };
 }
 

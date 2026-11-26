@@ -145,7 +145,7 @@ function relayProtectedError(error: RelayProtectedError): ConnectionAttemptError
         detail,
         i18nMessage,
         traceId,
-        // The tunnel carried the request when M3 Code is what failed to answer.
+        // The tunnel carried the request when Phoenix is what failed to answer.
         hop:
           endpointFailure === "origin_unreachable" || endpointFailure === "invalid_response"
             ? "server"
