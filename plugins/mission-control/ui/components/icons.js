@@ -145,6 +145,12 @@ const ICONS = {
   swarm:
     '<circle cx="8" cy="4.25" r="1.5"/><circle cx="4.25" cy="11.25" r="1.5"/><circle cx="11.75" cy="11.25" r="1.5"/><path d="M7.1 5.5 5.1 9.9M8.9 5.5l2 4.4M5.75 11.25h4.5"/>',
   chevronDown: '<path d="m4.5 6.25 3.5 3.5 3.5-3.5"/>',
+  chevronLeft: '<path d="m9.75 4.5-3.5 3.5 3.5 3.5"/>',
+  chevronRight: '<path d="m6.25 4.5 3.5 3.5-3.5 3.5"/>',
+  panelCollapse:
+    '<rect x="2.25" y="2.75" width="11.5" height="10.5" rx="1.5"/><path d="M9.75 2.75v10.5"/><path d="m5.25 6.25 1.75 1.75-1.75 1.75"/>',
+  panelExpand:
+    '<rect x="2.25" y="2.75" width="11.5" height="10.5" rx="1.5"/><path d="M6.25 2.75v10.5"/><path d="m10.75 6.25-1.75 1.75 1.75 1.75"/>',
   close: '<path d="m4.25 4.25 7.5 7.5m0-7.5-7.5 7.5"/>',
   file: '<path d="M4.25 2.5h4.75l3 3v8a1 1 0 0 1-1 1h-6.75a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"/><path d="M8.75 2.5v3.25H12"/>',
   code: '<path d="m5.75 5-3 3 3 3M10.25 5l3 3-3 3"/>',

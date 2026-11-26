@@ -39,6 +39,9 @@ const state = {
   overviewExpandedQuiet: new Set(),
   overviewSettledTab: new Map(),
   overviewSettledLimit: new Map(),
+  boardDoneCollapsed: false,
+  boardDoneTab: "threads", // threads | team
+  boardDoneLimit: 20,
   usage: null,
   usageLoading: false,
   usageFetchedAt: 0,
@@ -340,6 +343,7 @@ function renderHeader() {
   $("mc-count-running").textContent = String(rCount);
 
   $("mc-app")?.classList.toggle("is-full-width", isUsage);
+  $("mc-workspace")?.classList.toggle("is-board-view", state.view === "board");
   $("mc-filters")?.classList.toggle("hidden", isUsage || state.view === "inbox");
   const searchInput = $("mc-search");
   if (searchInput) {
@@ -377,7 +381,15 @@ function renderActiveView() {
   if (state.view === "inbox") {
     container.innerHTML = renderInbox(state.snap, state);
   } else if (state.view === "board") {
+    const savedScrolls = new Map();
+    for (const el of container.querySelectorAll("[data-board-scroll]")) {
+      savedScrolls.set(el.dataset.boardScroll, el.scrollTop);
+    }
     container.innerHTML = renderBoard(state.snap, state);
+    for (const el of container.querySelectorAll("[data-board-scroll]")) {
+      const top = savedScrolls.get(el.dataset.boardScroll);
+      if (typeof top === "number" && top > 0) el.scrollTop = top;
+    }
   } else if (state.view === "timeline") {
     container.innerHTML = renderTimeline(state.snap, state);
   } else if (state.view === "graph") {
@@ -1301,6 +1313,35 @@ document.addEventListener("click", (e) => {
     const projectId = settledAll.dataset.settledAll;
     const total = Number(settledAll.dataset.settledTotal) || 500;
     state.overviewSettledLimit.set(projectId, total);
+    renderActiveView();
+    return;
+  }
+
+  const toggleBoardDone = e.target.closest("[data-board-toggle-done]");
+  if (toggleBoardDone) {
+    state.boardDoneCollapsed = !state.boardDoneCollapsed;
+    renderActiveView();
+    return;
+  }
+
+  const boardDoneTab = e.target.closest("[data-board-done-tab]");
+  if (boardDoneTab) {
+    state.boardDoneTab = boardDoneTab.dataset.boardDoneTab === "team" ? "team" : "threads";
+    state.boardDoneLimit = 20;
+    renderActiveView();
+    return;
+  }
+
+  const boardDoneMore = e.target.closest("[data-board-done-more]");
+  if (boardDoneMore) {
+    state.boardDoneLimit = (Number(state.boardDoneLimit) || 20) + 20;
+    renderActiveView();
+    return;
+  }
+
+  const boardDoneAll = e.target.closest("[data-board-done-all]");
+  if (boardDoneAll) {
+    state.boardDoneLimit = Number(boardDoneAll.dataset.boardDoneTotal) || 500;
     renderActiveView();
     return;
   }
