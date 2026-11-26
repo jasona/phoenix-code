@@ -8,7 +8,7 @@ import * as Schema from "effect/Schema";
 import { GripIcon, Maximize2Icon, Minimize2Icon, MinusIcon, XIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { useMissionControlStore, type MissionControlWindow } from "../../missionControlStore";
-import { useComposerDraftStore } from "../../composerDraftStore";
+import { useComposerDraftStore, type DraftId } from "../../composerDraftStore";
 import { ComposerHandleContext } from "../../composerHandleContext";
 import { NewThreadHandlerContext } from "../../hooks/useHandleNewThread";
 import { useMissionControlNewThread } from "../../hooks/useMissionControlNewThread";
@@ -61,12 +61,12 @@ function MissionControlDraftContent({
   window,
   active,
   visible,
-  wide,
+  windowWidth,
 }: {
   window: MissionControlWindow;
   active: boolean;
   visible: boolean;
-  wide: boolean;
+  windowWidth: number;
 }) {
   const gt = useGT();
   const { draft, threadRef } = useWindowDraft(window);
@@ -97,7 +97,7 @@ function MissionControlDraftContent({
         instanceId={view.data.instanceId}
         active={active}
         visible={visible}
-        wide={wide}
+        windowWidth={windowWidth}
       />
     ) : (
       <p role="status" className="p-5 text-sm text-muted-foreground">
@@ -156,6 +156,7 @@ export function MissionControlThreadWindows({ active }: { active: boolean }) {
               <MissionControlThreadWindow
                 key={key}
                 threadKey={key}
+                draftId={window.draftId}
                 title={<ThreadWindowLabel window={window} />}
                 viewport={viewport}
                 order={index}
@@ -165,13 +166,13 @@ export function MissionControlThreadWindows({ active }: { active: boolean }) {
                 onMinimize={() => minimizeWindow(key)}
                 onClose={() => closeWindow(key)}
               >
-                {(wide) =>
+                {(windowWidth) =>
                   window.draftId ? (
                     <MissionControlDraftContent
                       window={window}
                       active={active && !window.minimized && focusedKey === key}
                       visible={active && !window.minimized}
-                      wide={wide}
+                      windowWidth={windowWidth}
                     />
                   ) : (
                     <MissionControlReviewDesk
@@ -179,7 +180,7 @@ export function MissionControlThreadWindows({ active }: { active: boolean }) {
                       instanceId={window.instanceId}
                       active={active && !window.minimized && focusedKey === key}
                       visible={active && !window.minimized}
-                      wide={wide}
+                      windowWidth={windowWidth}
                     />
                   )
                 }
@@ -228,6 +229,7 @@ const handles = [
 
 function MissionControlThreadWindow({
   threadKey,
+  draftId,
   title,
   viewport,
   order,
@@ -239,6 +241,7 @@ function MissionControlThreadWindow({
   children,
 }: {
   threadKey: string;
+  draftId?: DraftId | undefined;
   title: ReactNode;
   viewport: { width: number; height: number };
   order: number;
@@ -247,24 +250,37 @@ function MissionControlThreadWindow({
   onFocus: () => void;
   onMinimize: () => void;
   onClose: () => void;
-  children: (wide: boolean) => ReactNode;
+  children: (windowWidth: number) => ReactNode;
 }) {
   const gt = useGT();
   const titleId = useId();
   const popup = useRef<HTMLDivElement>(null);
+  const draft = useComposerDraftStore((state) => (draftId ? state.getDraftSession(draftId) : null));
+  const isNewThread = Boolean(draft && !draft.promotedTo);
   const saved = useMissionControlWindowStore((state) => state.byThreadKey[threadKey]);
-  const { setBounds, setMaximized } = useMissionControlWindowStore();
+  const newThreadPlacement = useMissionControlWindowStore((state) => state.newThreadPlacement);
+  const { setBounds, setMaximized, setNewThreadBounds, setNewThreadMaximized } =
+    useMissionControlWindowStore();
   const [moving, setMoving] = useState<MissionControlWindowBounds | null>(null);
   const gesture = useRef<{
     x: number;
     y: number;
     bounds: MissionControlWindowBounds;
     direction: string;
+    latest?: MissionControlWindowBounds;
   } | null>(null);
   const compact = viewport.width < 640;
-  const maximized = compact || saved?.maximized === true;
+  const [initialMaximized] = useState(() =>
+    isNewThread ? newThreadPlacement.maximized === true : false,
+  );
+  const maximizedSaved = saved?.maximized ?? initialMaximized;
+  const maximized = compact || maximizedSaved;
   const [initialBounds] = useState(() =>
-    fitMissionControlWindow(saved?.bounds, viewport, order * 24),
+    fitMissionControlWindow(
+      saved?.bounds ?? (isNewThread ? newThreadPlacement.bounds : undefined),
+      viewport,
+      order * 24,
+    ),
   );
   const normal = fitMissionControlWindow(moving ?? saved?.bounds ?? initialBounds, viewport);
   const bounds = maximized ? { x: 0, y: 0, ...viewport } : normal;
@@ -302,11 +318,18 @@ function MissionControlThreadWindow({
         next.height = drag.bounds.y + drag.bounds.height - next.y;
       }
     }
-    setMoving(fitMissionControlWindow(next, viewport));
+    const fitted = fitMissionControlWindow(next, viewport);
+    drag.latest = fitted;
+    setMoving(fitted);
   };
   const finish = (event: PointerEvent<HTMLElement>) => {
-    if (!gesture.current) return;
-    if (moving) setBounds(threadKey, moving);
+    const drag = gesture.current;
+    if (!drag) return;
+    const nextBounds = drag.latest ?? moving;
+    if (nextBounds) {
+      setBounds(threadKey, nextBounds);
+      if (isNewThread) setNewThreadBounds(nextBounds);
+    }
     gesture.current = null;
     setMoving(null);
     if (event.currentTarget.hasPointerCapture(event.pointerId))
@@ -327,8 +350,13 @@ function MissionControlThreadWindow({
   };
   const toggleMaximized = () => {
     if (compact) return;
+    const nextMaximized = !maximizedSaved;
     if (!saved?.bounds) setBounds(threadKey, normal);
-    setMaximized(threadKey, !saved?.maximized);
+    setMaximized(threadKey, nextMaximized);
+    if (isNewThread) {
+      if (!newThreadPlacement.bounds) setNewThreadBounds(normal);
+      setNewThreadMaximized(nextMaximized);
+    }
   };
   return (
     <div
@@ -403,15 +431,14 @@ function MissionControlThreadWindow({
             event.preventDefault();
             const dx = event.key === "ArrowLeft" ? -20 : event.key === "ArrowRight" ? 20 : 0;
             const dy = event.key === "ArrowUp" ? -20 : event.key === "ArrowDown" ? 20 : 0;
-            setBounds(
-              threadKey,
-              fitMissionControlWindow(
-                event.shiftKey
-                  ? { ...normal, width: normal.width + dx, height: normal.height + dy }
-                  : { ...normal, x: normal.x + dx, y: normal.y + dy },
-                viewport,
-              ),
+            const nextBounds = fitMissionControlWindow(
+              event.shiftKey
+                ? { ...normal, width: normal.width + dx, height: normal.height + dy }
+                : { ...normal, x: normal.x + dx, y: normal.y + dy },
+              viewport,
             );
+            setBounds(threadKey, nextBounds);
+            if (isNewThread) setNewThreadBounds(nextBounds);
           }}
         >
           <GripIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
@@ -432,13 +459,11 @@ function MissionControlThreadWindow({
           <Button
             size="icon-sm"
             variant="ghost"
-            aria-label={
-              saved?.maximized ? gt("Restore thread window") : gt("Maximize thread window")
-            }
-            title={saved?.maximized ? gt("Restore thread window") : gt("Maximize thread window")}
+            aria-label={maximizedSaved ? gt("Restore thread window") : gt("Maximize thread window")}
+            title={maximizedSaved ? gt("Restore thread window") : gt("Maximize thread window")}
             onClick={toggleMaximized}
           >
-            {saved?.maximized ? <Minimize2Icon /> : <Maximize2Icon />}
+            {maximizedSaved ? <Minimize2Icon /> : <Maximize2Icon />}
           </Button>
         )}
         <Button
@@ -451,9 +476,7 @@ function MissionControlThreadWindow({
           <XIcon />
         </Button>
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden rounded-b-lg">
-        {children(bounds.width >= 1000)}
-      </div>
+      <div className="min-h-0 flex-1 overflow-hidden rounded-b-lg">{children(bounds.width)}</div>
       {!maximized &&
         handles.map(([direction, className]) => (
           <div

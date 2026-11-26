@@ -776,10 +776,7 @@ const RootStackConfig = createWorkspaceStackNavigator({
       linking: `${THREAD_LINKING_PREFIX}/files/:path*`,
       options: pageRoute(),
     }),
-    ThreadPlugins: createNativeStackScreen({
-      screen: PluginsScreen,
-      options: modalRoute({ header: "solid" }),
-    }),
+    ThreadPlugins: createNativeStackScreen({ screen: PluginsScreen, options: modalRoute({ header: "solid" }) }),
     ThreadMcpApp: createNativeStackScreen({
       screen: McpAppFullscreenScreen,
       linking: `${THREAD_LINKING_PREFIX}/apps/:itemId`,

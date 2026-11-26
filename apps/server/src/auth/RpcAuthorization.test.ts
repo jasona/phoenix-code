@@ -1050,16 +1050,12 @@ it.effect("plugin file access requires both host-operation and filesystem author
       operation: { type: "files" as const, path: "README.md" },
     };
     const operator = yield* clientWith([AuthOrchestrationOperateScope]);
-    expect(
-      yield* operator[WS_METHODS.pluginsHost](input).pipe(Effect.asVoid, Effect.flip),
-    ).toMatchObject({
+    expect(yield* operator[WS_METHODS.pluginsHost](input).pipe(Effect.asVoid, Effect.flip)).toMatchObject({
       requiredPermission: AuthFilesystemReadScope,
     });
     expect(handled).toBe(0);
     const reader = yield* clientWith([AuthFilesystemReadScope]);
-    expect(
-      yield* reader[WS_METHODS.pluginsHost](input).pipe(Effect.asVoid, Effect.flip),
-    ).toMatchObject({
+    expect(yield* reader[WS_METHODS.pluginsHost](input).pipe(Effect.asVoid, Effect.flip)).toMatchObject({
       requiredPermission: AuthOrchestrationOperateScope,
     });
     const authorized = yield* clientWith([AuthOrchestrationOperateScope, AuthFilesystemReadScope]);

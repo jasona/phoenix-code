@@ -42,8 +42,8 @@ const semver = requireFromUpdater("semver") as { parse: (version: string) => Run
 
 const releaseTitle = (version: string) =>
   version.includes("-nightly.")
-    ? `M3 Code Nightly ${version} (0123456789ab)`
-    : `M3 Code v${version}`;
+    ? `Phoenix Nightly ${version} (0123456789ab)`
+    : `Phoenix v${version}`;
 
 const releaseFeed = (...versions: ReadonlyArray<string>) =>
   parseXml(
@@ -1404,7 +1404,7 @@ describe("describeUpdateErrorCause", () => {
 });
 
 describe("DesktopUpdates under a managed policy", () => {
-  const message = "Example Corp manages M3 Code updates.";
+  const message = "Example Corp manages Phoenix updates.";
   const managed = (
     policy: Partial<DesktopUpdatePolicy.UpdatePolicy>,
   ): DesktopUpdatePolicy.UpdatePolicy => ({

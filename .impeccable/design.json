@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-25T17:58:00Z",
+  "title": "Design System: Phoenix",
+  "extensions": {
+    "colorMeta": {
+      "signal-orange": {
+        "role": "primary",
+        "displayName": "Signal Orange",
+        "canonical": "oklch(0.653 0.194 37.8)",
+        "tonalRamp": [
+          "#2d1208",
+          "#4d1e0d",
+          "#742e13",
+          "#9d3e18",
+          "#c84614",
+          "#e85d26",
+          "#f28b61",
+          "#fbd9ca"
+        ]
+      },
+      "signal-orange-light": {
+        "role": "primary",
+        "displayName": "Deep Signal Orange",
+        "canonical": "oklch(0.558 0.178 36.2)",
+        "tonalRamp": [
+          "#2a1007",
+          "#481c0c",
+          "#6c2a12",
+          "#923917",
+          "#c84614",
+          "#df6030",
+          "#ee8f69",
+          "#fadacf"
+        ]
+      },
+      "hardware-sage": {
+        "role": "secondary",
+        "displayName": "Hardware Sage",
+        "canonical": "oklch(0.654 0.125 152.5)",
+        "tonalRamp": [
+          "#0d2316",
+          "#153a24",
+          "#1d5434",
+          "#267d4b",
+          "#3fa66b",
+          "#64bd88",
+          "#97d6b0",
+          "#d4efe0"
+        ]
+      },
+      "anodized-charcoal": {
+        "role": "neutral",
+        "displayName": "Anodized Charcoal",
+        "canonical": "oklch(0.188 0.004 56)",
+        "tonalRamp": [
+          "#090808",
+          "#141312",
+          "#1c1b19",
+          "#242220",
+          "#3a3632",
+          "#635e57",
+          "#9c968e",
+          "#f0ede6"
+        ]
+      },
+      "machined-stone": {
+        "role": "neutral",
+        "displayName": "Machined Stone",
+        "canonical": "oklch(0.222 0.004 56)",
+        "tonalRamp": [
+          "#0d0c0b",
+          "#141312",
+          "#1c1b19",
+          "#292623",
+          "#413d38",
+          "#6e6860",
+          "#a8a299",
+          "#f0ede6"
+        ]
+      },
+      "warm-chalk": {
+        "role": "neutral",
+        "displayName": "Warm Chalk",
+        "canonical": "oklch(0.946 0.009 84)",
+        "tonalRamp": [
+          "#1c1b19",
+          "#36332f",
+          "#57524b",
+          "#7c766d",
+          "#a69f95",
+          "#cbc5bb",
+          "#e4e0d6",
+          "#f0ede6"
+        ]
+      },
+      "daylight-paper": {
+        "role": "neutral",
+        "displayName": "Daylight Paper",
+        "canonical": "oklch(0.957 0.008 84)",
+        "tonalRamp": [
+          "#1c1b19",
+          "#3c3934",
+          "#635e57",
+          "#8f8980",
+          "#b8b2a8",
+          "#d8d3c9",
+          "#eae7df",
+          "#f3f1ec"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Onboarding lockups and splash headings." },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Active thread titles and settings section headers."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sidebar brand wordmark, project groups, and primary CTAs."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Conversation turns, thread list items, and descriptions."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tabular hardware status chips, model names, and timestamps."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Unified diffs, inline code, and terminal output."
+      }
+    },
+    "shadows": [
+      {
+        "name": "composer-dark",
+        "value": "0 14px 32px -18px rgb(0 0 0 / 75%)",
+        "purpose": "Subtle ambient grounding under floating composer and detached overlays in dark mode."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-drawer",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Decelerating curve for docked drawers, composer context strips, and one-off step arrivals."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Phoenix Brand Mark Lockup",
+      "kind": "nav",
+      "description": "Sidebar header brand lockup pairing the chamfered Anodized Hardware Medallion (`PhoenixMark` plate variant) with the wide-tracked geometric uppercase PHOENIX vector wordmark.",
+      "html": "<a class=\"ds-brand-lockup\" href=\"#\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 128 128\" fill=\"none\" aria-hidden=\"true\"><path d=\"M22 4 H106 L124 22 V106 L106 124 H22 L4 106 V22 Z\" fill=\"none\" stroke=\"var(--border, #302d2a)\" stroke-width=\"2.5\"/><path d=\"M25 10 H103 L118 25 V103 L103 118 H25 L10 103 V25 Z\" fill=\"var(--card, #242220)\"/><g transform=\"translate(64 64) scale(0.76) translate(-64 -64)\"><path d=\"M64 16 L74 43 L70 46.5 L70 96.5 L64 111 L58 96.5 L58 46.5 L54 43 Z\" fill=\"var(--primary, #e85d26)\"/><path d=\"M51 52 L19 20 L21 35 L40 54 L23 43 L27 56 L42 70 L30 63 L37 77 L51 92 Z\" fill=\"currentColor\"/><path d=\"M77 52 L109 20 L107 35 L88 54 L105 43 L101 56 L86 70 L98 63 L91 77 L77 92 Z\" fill=\"currentColor\"/></g></svg><svg height=\"14\" viewBox=\"0 0 175 28\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" d=\"M0 3 H12.4 C16.3 3 19 5.5 19 9.6 C19 13.7 16.3 16.2 12.4 16.2 H4.2 V25 H0 Z M4.2 6.8 V12.4 H12 C13.9 12.4 14.8 11.4 14.8 9.6 C14.8 7.8 13.9 6.8 12 6.8 Z\"/><path d=\"M26 3 H30.2 V12 H41.8 V3 H46 V25 H41.8 V15.8 H30.2 V25 H26 Z\"/><path fill-rule=\"evenodd\" d=\"M64.5 2.6 C71.6 2.6 76 6.7 76 14 C76 21.3 71.6 25.4 64.5 25.4 C57.4 25.4 53 21.3 53 14 C53 6.7 57.4 2.6 64.5 2.6 Z M64.5 6.5 C59.8 6.5 57.3 9.3 57.3 14 C57.3 18.7 59.8 21.5 64.5 21.5 C69.2 21.5 71.7 18.7 71.7 14 C71.7 9.3 69.2 6.5 64.5 6.5 Z\"/><path d=\"M84 3 H102 V6.8 H88.2 V12 H100.2 V15.6 H88.2 V21.2 H102 V25 H84 Z\"/><path d=\"M110 3 H114.6 L126.8 18.5 V3 H131 V25 H126.4 L114.2 9.5 V25 H110 Z\"/><path d=\"M139 3 H143.4 V25 H139 Z\"/><path d=\"M151 3 H155.9 L162.5 11.4 L169.1 3 H174 L165.1 13.8 L174.4 25 H169.4 L162.5 16.3 L155.6 25 H150.6 L159.9 13.8 Z\"/></svg></a>",
+      "css": ".ds-brand-lockup { display: inline-flex; align-items: center; gap: 10px; padding: 4px 8px; border-radius: 4px; color: var(--foreground, #f0ede6); text-decoration: none; } .ds-brand-lockup:hover { background: var(--accent, #292623); } .ds-brand-lockup:focus-visible { outline: 2px solid var(--ring, #e85d26); outline-offset: 2px; }"
+    },
+    {
+      "name": "Primary Action Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Signal Orange primary action for sending prompts or committing key actions.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Send</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--primary, #e85d26); color: var(--primary-foreground, #141312); font-family: \"Public Sans Variable\", \"Public Sans\", system-ui, sans-serif; font-size: 13px; font-weight: 600; padding: 6px 14px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; transition: background-color 150ms ease; } .ds-btn-primary:hover { background: #d1501d; } .ds-btn-primary:focus-visible { outline: 2px solid var(--ring, #e85d26); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Control Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Machined neutral control for secondary toolbar and panel actions.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">New thread</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--secondary, #242220); color: var(--secondary-foreground, #f0ede6); font-family: \"Public Sans Variable\", \"Public Sans\", system-ui, sans-serif; font-size: 13px; font-weight: 500; padding: 6px 12px; border: 1px solid var(--border, #302d2a); border-radius: 4px; cursor: pointer; transition: background-color 150ms ease; } .ds-btn-secondary:hover { background: #2d2a27; } .ds-btn-secondary:focus-visible { outline: 2px solid var(--ring, #e85d26); outline-offset: 2px; }"
+    },
+    {
+      "name": "Hardware Status Badge",
+      "kind": "chip",
+      "refersTo": "badge-hardware",
+      "description": "Tabular monospace readout displaying local inference host and decode rate.",
+      "html": "<span class=\"ds-badge-hardware\"><span class=\"ds-badge-dot\"></span>LOCAL · spark5 · 84 tok/s</span>",
+      "css": ".ds-badge-hardware { display: inline-flex; align-items: center; gap: 6px; background: var(--card, #242220); color: var(--success, #3fa66b); border: 1px solid var(--border, #302d2a); border-radius: 4px; padding: 3px 8px; font-family: \"JetBrains Mono Variable\", \"JetBrains Mono\", monospace; font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; } .ds-badge-dot { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; }"
+    },
+    {
+      "name": "Sidebar Thread Row",
+      "kind": "nav",
+      "description": "Active and idle thread rows on the Machined Stone sidebar.",
+      "html": "<div class=\"ds-thread-list\"><a class=\"ds-thread-row ds-thread-active\" href=\"#\"><span>Rebrand shell &amp; icons</span><span class=\"ds-thread-time\">now</span></a><a class=\"ds-thread-row\" href=\"#\"><span>Local vision probe fallback</span><span class=\"ds-thread-time\">14m</span></a></div>",
+      "css": ".ds-thread-list { display: flex; flex-direction: column; gap: 2px; width: 248px; padding: 8px; background: var(--sidebar, #1c1b19); border-radius: 6px; } .ds-thread-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 4px; border-left: 2px solid transparent; color: var(--sidebar-foreground, #f0ede6); font-family: \"Public Sans Variable\", \"Public Sans\", system-ui, sans-serif; font-size: 12.5px; text-decoration: none; } .ds-thread-row:hover { background: var(--sidebar-row-hover, #242220); } .ds-thread-row.ds-thread-active { background: var(--sidebar-row-active, #292623); border-left-color: var(--primary, #e85d26); font-weight: 600; } .ds-thread-time { font-family: \"JetBrains Mono Variable\", \"JetBrains Mono\", monospace; font-size: 11px; color: var(--muted-foreground, #9c968e); font-variant-numeric: tabular-nums; } .ds-thread-row:focus-visible { outline: 2px solid var(--ring, #e85d26); outline-offset: -2px; }"
+    },
+    {
+      "name": "Composer Field",
+      "kind": "input",
+      "refersTo": "input-composer",
+      "description": "Tactile prompt composer anchored over Anodized Charcoal with Signal Orange focus.",
+      "html": "<div class=\"ds-composer\"><input class=\"ds-composer-input\" type=\"text\" placeholder=\"Reply to Rebrand shell &amp; icons…\" aria-label=\"Prompt composer\" /></div>",
+      "css": ".ds-composer { background: var(--card, #1c1b19); border: 1px solid var(--input, #3a3632); border-radius: 6px; padding: 10px 12px; } .ds-composer:focus-within { border-color: var(--ring, #e85d26); } .ds-composer-input { width: 100%; background: transparent; border: none; color: var(--foreground, #f0ede6); caret-color: var(--primary, #e85d26); font-family: \"Public Sans Variable\", \"Public Sans\", system-ui, sans-serif; font-size: 13px; outline: none; } .ds-composer-input::placeholder { color: var(--placeholder, #9c968e); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Anodized Workshop",
+    "overview": "Phoenix draws from Dieter Rams / Braun industrial hardware specifications rather than cold zinc-and-electric-blue SaaS interfaces or literal flame gradients. Local GPUs, SSH workstations, inference queues, and coding agents are treated as calm, physical workshop equipment designed for multi-hour daily engineering sessions.\n\nThe workbench pairs warm anodized charcoal surfaces with matte stone panels, crisp 1px structural dividers, and disciplined Braun Signal Orange reserved strictly for the active Phoenix spine, primary actions, and focused state. Navigation, diffs, and timelines remain instantly scannable to developers while eliminating nested card bloat and continuously repainting GPU animations.",
+    "keyCharacteristics": [
+      "Warm anodized charcoal grounds (#141312 standard dark, #000000 OLED, #f3f1ec daylight paper) instead of blue-tinted zinc.",
+      "Disciplined Signal Orange (#e85d26 dark, #c84614 light) strictly for primary actions, focus rings, and the central Phoenix spine bar.",
+      "Precision 4px control and 6px panel radii paired with 1px hairline stone dividers instead of drop-shadow stacks.",
+      "Self-hosted Public Sans for UI legibility and JetBrains Mono for code, diffs, and hardware telemetry.",
+      "Anodized hardware medallion emblem (rising wings + Signal Orange ember spear) paired with wide-tracked uppercase PHOENIX vector wordmark."
+    ],
+    "rules": [
+      {
+        "name": "The Signal Orange Budget Rule",
+        "body": "Signal Orange (#e85d26 / #c84614) owns at most one primary focal action per view plus the Phoenix brand spine; never flood backgrounds, badges, or secondary buttons with orange.",
+        "section": "colors"
+      },
+      {
+        "name": "The Hardware Honesty Rule",
+        "body": "Local-ready green (#3fa66b) and fault red (#e5484d) appear only on real runtime state (inference servers, queue status, diffs), never as decorative ornament.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Metric Rule",
+        "body": "Every numerical readout (TTFT, tok/s, context size, token counts, diff counts) uses JetBrains Mono with tabular numerals so columns never jitter while streaming.",
+        "section": "typography"
+      },
+      {
+        "name": "The Zero-Cost Motion Rule",
+        "body": "Never ship continuously repainting CSS animations; status indicators and skeletons step discreetly or transition once (180ms exponential ease-out) so 120Hz displays stay idle at rest.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep Signal Orange (#e85d26 / #c84614) scarce so primary actions and the Phoenix mark spine command immediate visual priority.",
+      "Do use the anodized medallion PhoenixMark (plate / brand / mono) and PhoenixWordmark everywhere the product identifies itself.",
+      "Do pair Public Sans Variable for UI prose with JetBrains Mono Variable for code, diffs, and numeric hardware telemetry.",
+      "Do preserve full compatibility with THEME_COLOR_ROLES across Light, Standard Dark (Anodized Workshop), OLED, and user-imported themes."
+    ],
+    "donts": [
+      "Don't reintroduce T3 Code or M3 Code names, wordmarks, icons, or royal-blue (#1b4ed8 / #346bf1) default accents.",
+      "Don't add glowing neon borders, gradient text, flame illustrations, or continuously repainting CSS animations.",
+      "Don't nest bordered cards inside cards on settings or detail panels; use 1px dividers and spacing instead.",
+      "Don't restyle apps/web/src/components/ui primitives inline from parent components; define shared variants on the primitives themselves."
+    ]
+  }
+}

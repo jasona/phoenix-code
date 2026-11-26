@@ -142,7 +142,7 @@ function UpdateEverythingDialogContent({
         <AlertDialogDescription>
           {version !== null ? (
             <>
-              M3 Code <span className="font-mono text-xs">{version}</span>
+              Phoenix <span className="font-mono text-xs">{version}</span>
             </>
           ) : null}
           {version !== null && providerCount > 0 ? " · " : null}
@@ -176,7 +176,7 @@ function UpdateEverythingDialogContent({
               <span role="columnheader">
                 <T>Machine</T>
               </span>
-              <span role="columnheader">M3 Code</span>
+              <span role="columnheader">Phoenix</span>
               <span role="columnheader">
                 <T>Providers</T>
               </span>

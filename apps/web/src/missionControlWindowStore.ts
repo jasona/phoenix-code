@@ -13,24 +13,45 @@ export interface MissionControlWindowBounds {
   height: number;
 }
 
-const Pane = Schema.Literals(["conversation", "changes", "terminal", "preview", "file"]);
-export type MissionControlWindowPane = typeof Pane.Type;
-type WindowFile = Extract<RightPanelSurface, { kind: "file" | "files" }>;
-type WindowState = {
+export interface MissionControlWindowPlacement {
   bounds?: MissionControlWindowBounds;
   maximized?: boolean;
+}
+
+const Pane = Schema.Literals(["conversation", "changes", "terminal", "preview", "file"]);
+export type MissionControlWindowPane = typeof Pane.Type;
+const ImageStreamLayout = Schema.Literals(["stream", "grid"]);
+export type MissionControlImageStreamLayout = typeof ImageStreamLayout.Type;
+const SidebarKind = Schema.Literals(["tasks", "images"]);
+export type MissionControlSidebarKind = typeof SidebarKind.Type;
+type WindowFile = Extract<RightPanelSurface, { kind: "file" | "files" }>;
+type WindowState = MissionControlWindowPlacement & {
   pane?: MissionControlWindowPane;
   file?: WindowFile;
+  tasksOpen?: boolean;
+  imagesOpen?: boolean;
+  imagesLayout?: MissionControlImageStreamLayout;
+  preferredSidebar?: MissionControlSidebarKind;
 };
 interface WindowStore {
   byThreadKey: Record<string, WindowState>;
+  newThreadPlacement: MissionControlWindowPlacement;
   setBounds: (key: string, bounds: MissionControlWindowBounds) => void;
   setMaximized: (key: string, maximized: boolean) => void;
+  setNewThreadBounds: (bounds: MissionControlWindowBounds) => void;
+  setNewThreadMaximized: (maximized: boolean) => void;
+  applyNewThreadPlacement: (key: string) => void;
   setPane: (key: string, pane: MissionControlWindowPane) => void;
   setFile: (key: string, file: WindowFile) => void;
+  setTasksOpen: (key: string, tasksOpen: boolean) => void;
+  setImagesOpen: (key: string, imagesOpen: boolean) => void;
+  setImagesLayout: (key: string, imagesLayout: MissionControlImageStreamLayout) => void;
+  setPreferredSidebar: (key: string, preferredSidebar: MissionControlSidebarKind) => void;
 }
 
 const isPane = Schema.is(Pane);
+const isImageStreamLayout = Schema.is(ImageStreamLayout);
+const isSidebarKind = Schema.is(SidebarKind);
 const isBounds = Schema.is(
   Schema.Struct({
     x: Schema.Number,
@@ -110,20 +131,34 @@ function isScopedKey(key: string) {
   );
 }
 
-function readPersistedState(value: unknown): Pick<WindowStore, "byThreadKey"> {
-  if (!isRecord(value) || !isRecord(value.byThreadKey)) return { byThreadKey: {} };
+function readPlacement(value: unknown): MissionControlWindowPlacement {
+  if (!isRecord(value)) return {};
+  const placement: MissionControlWindowPlacement = {};
+  if (validBounds(value.bounds)) placement.bounds = value.bounds;
+  if (typeof value.maximized === "boolean") placement.maximized = value.maximized;
+  return placement;
+}
+
+function readPersistedState(
+  value: unknown,
+): Pick<WindowStore, "byThreadKey" | "newThreadPlacement"> {
+  if (!isRecord(value)) return { byThreadKey: {}, newThreadPlacement: {} };
+  const newThreadPlacement = readPlacement(value.newThreadPlacement);
+  if (!isRecord(value.byThreadKey)) return { byThreadKey: {}, newThreadPlacement };
   const entries: Array<[string, WindowState]> = [];
   for (const [key, entry] of Object.entries(value.byThreadKey)) {
     if (!isScopedKey(key) || !isRecord(entry)) continue;
-    const state: WindowState = {};
-    if (validBounds(entry.bounds)) state.bounds = entry.bounds;
-    if (typeof entry.maximized === "boolean") state.maximized = entry.maximized;
+    const state: WindowState = readPlacement(entry);
+    if (typeof entry.tasksOpen === "boolean") state.tasksOpen = entry.tasksOpen;
+    if (typeof entry.imagesOpen === "boolean") state.imagesOpen = entry.imagesOpen;
+    if (isImageStreamLayout(entry.imagesLayout)) state.imagesLayout = entry.imagesLayout;
+    if (isSidebarKind(entry.preferredSidebar)) state.preferredSidebar = entry.preferredSidebar;
     if (isFile(entry.file)) state.file = entry.file;
     if (isPane(entry.pane))
       state.pane = entry.pane === "file" && !state.file ? "conversation" : entry.pane;
     if (Object.keys(state).length > 0) entries.push([key, state]);
   }
-  return { byThreadKey: Object.fromEntries(entries.slice(-100)) };
+  return { byThreadKey: Object.fromEntries(entries.slice(-100)), newThreadPlacement };
 }
 
 function updateWindow(byThreadKey: WindowStore["byThreadKey"], key: string, patch: WindowState) {
@@ -138,16 +173,46 @@ export const useMissionControlWindowStore = create<WindowStore>()(
   persist(
     (set) => ({
       byThreadKey: {},
+      newThreadPlacement: {},
       setBounds: (key, bounds) => {
         if (!validBounds(bounds)) return;
         set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { bounds }) }));
       },
       setMaximized: (key, maximized) =>
         set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { maximized }) })),
+      setNewThreadBounds: (bounds) => {
+        if (!validBounds(bounds)) return;
+        set((state) => ({
+          newThreadPlacement: { ...state.newThreadPlacement, bounds },
+        }));
+      },
+      setNewThreadMaximized: (maximized) =>
+        set((state) => ({
+          newThreadPlacement: { ...state.newThreadPlacement, maximized },
+        })),
+      applyNewThreadPlacement: (key) =>
+        set((state) => {
+          const { bounds, maximized } = state.newThreadPlacement;
+          const patch: WindowState = {};
+          if (bounds) patch.bounds = bounds;
+          if (maximized !== undefined) patch.maximized = maximized;
+          if (Object.keys(patch).length === 0) return state;
+          return { byThreadKey: updateWindow(state.byThreadKey, key, patch) };
+        }),
       setPane: (key, pane) =>
         set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { pane }) })),
       setFile: (key, file) =>
         set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { file }) })),
+      setTasksOpen: (key, tasksOpen) =>
+        set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { tasksOpen }) })),
+      setImagesOpen: (key, imagesOpen) =>
+        set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { imagesOpen }) })),
+      setImagesLayout: (key, imagesLayout) =>
+        set((state) => ({ byThreadKey: updateWindow(state.byThreadKey, key, { imagesLayout }) })),
+      setPreferredSidebar: (key, preferredSidebar) =>
+        set((state) => ({
+          byThreadKey: updateWindow(state.byThreadKey, key, { preferredSidebar }),
+        })),
     }),
     {
       name: "phoenix:mission-control-windows:v1",
@@ -155,7 +220,7 @@ export const useMissionControlWindowStore = create<WindowStore>()(
       storage: createJSONStorage(() =>
         resolveStorage(typeof window !== "undefined" ? window.localStorage : undefined),
       ),
-      partialize: ({ byThreadKey }) => ({ byThreadKey }),
+      partialize: ({ byThreadKey, newThreadPlacement }) => ({ byThreadKey, newThreadPlacement }),
       migrate: readPersistedState,
       merge: (persisted, current) => ({ ...current, ...readPersistedState(persisted) }),
     },

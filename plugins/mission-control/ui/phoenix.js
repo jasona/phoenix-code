@@ -2,6 +2,7 @@
   let sequence = 0;
   let visible = true;
   let nativeThreadDialog = false;
+  let liveActivity = false;
   let nativeNewThreadDialog = false;
   const pending = new Map();
   function call(method, params) {
@@ -19,6 +20,12 @@
   }
   function context(value) {
     if (!value) return;
+    if (typeof value["phoenix/liveActivity"] === "boolean")
+      liveActivity = value["phoenix/liveActivity"];
+    if (value["phoenix/activity"])
+      window.dispatchEvent(
+        new CustomEvent("phoenix-activity", { detail: value["phoenix/activity"] }),
+      );
     if (typeof value["phoenix/nativeThreadDialog"] === "boolean")
       nativeThreadDialog = value["phoenix/nativeThreadDialog"];
     if (typeof value["phoenix/nativeNewThreadDialog"] === "boolean")
@@ -68,6 +75,15 @@
       return visible;
     },
     ready,
+    activity: {
+      get available() {
+        return liveActivity;
+      },
+      async watch(threadId) {
+        await ready;
+        return call("phoenix/request", { type: "missionControlActivity", threadId });
+      },
+    },
     drafts: {
       read: (threadId) => draftRequest("read", threadId),
       write: (threadId, text) => draftRequest("write", threadId, { text }),

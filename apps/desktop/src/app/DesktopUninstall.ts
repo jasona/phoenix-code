@@ -50,10 +50,10 @@ const APP_DATA_PROFILE_NAMES = [
   "t3code-v2",
   "t3code-dev",
   "t3code",
-  "M3 Code",
-  "M3 Code (Beta)",
-  "M3 Code (Nightly)",
-  "M3 Code (Dev)",
+  "Phoenix",
+  "Phoenix (Beta)",
+  "Phoenix (Nightly)",
+  "Phoenix (Dev)",
   "T3 Code (Alpha)",
   "T3 Code (Dev)",
 ] as const;
@@ -61,10 +61,10 @@ const APP_DATA_PROFILE_NAMES = [
 const MAC_CACHE_NAMES = [
   "com.m3code.m3code",
   "com.m3code.m3code.ShipIt",
-  "M3 Code",
-  "M3 Code (Beta)",
-  "M3 Code (Nightly)",
-  "M3 Code (Dev)",
+  "Phoenix",
+  "Phoenix (Beta)",
+  "Phoenix (Nightly)",
+  "Phoenix (Dev)",
   "com.t3tools.t3code",
   "com.t3tools.t3code.ShipIt",
 ] as const;
@@ -81,22 +81,22 @@ const MAC_SAVED_STATE_DIRS = [
 ] as const;
 
 const MAC_LOG_DIRS = [
-  "M3 Code",
-  "M3 Code (Beta)",
-  "M3 Code (Nightly)",
-  "M3 Code (Dev)",
+  "Phoenix",
+  "Phoenix (Beta)",
+  "Phoenix (Nightly)",
+  "Phoenix (Dev)",
   "t3code-v2",
 ] as const;
 
 const MAC_BUNDLE_STORAGE_IDS = ["com.m3code.m3code", "com.t3tools.t3code"] as const;
 
-const LINUX_CACHE_NAMES = ["m3code", "M3 Code", "t3code", "t3code-v2"] as const;
+const LINUX_CACHE_NAMES = ["m3code", "Phoenix", "t3code", "t3code-v2"] as const;
 
 const WINDOWS_LOCAL_APP_DATA_NAMES = [
-  "M3 Code",
+  "Phoenix",
   "m3code-updater",
   "t3code-updater",
-  "Programs\\M3 Code",
+  "Programs\\Phoenix",
 ] as const;
 
 /** Walks up from a macOS executable path to find its enclosing `.app` bundle directory. */
@@ -163,7 +163,7 @@ export interface DesktopUninstallCandidateSet {
 }
 
 /**
- * Computes all candidate filesystem paths belonging to M3 Code on the current OS.
+ * Computes all candidate filesystem paths belonging to Phoenix on the current OS.
  * Only paths that exist on disk are included in the final plan and cleanup invocation.
  */
 export function collectDesktopUninstallCandidates(input: {
@@ -304,7 +304,7 @@ const POSIX_CLEANUP_SCRIPT = [
 
 /**
  * Spawns a detached OS helper that waits for the Electron app PID to exit and then
- * deletes all scheduled M3 Code paths.
+ * deletes all scheduled Phoenix paths.
  */
 function spawnDetachedDesktopCleanup(input: {
   readonly platform: NodeJS.Platform;
@@ -502,7 +502,7 @@ const make = Effect.gen(function* () {
       { concurrency: "unbounded" },
     );
 
-    // 4. Spawn detached cleanup helper that deletes all M3 Code paths once Electron exits.
+    // 4. Spawn detached cleanup helper that deletes all Phoenix paths once Electron exits.
     yield* spawnDetachedDesktopCleanup({
       platform: environment.platform,
       pid: process.pid,

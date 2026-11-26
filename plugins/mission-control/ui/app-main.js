@@ -1,3 +1,4 @@
+import { isActivityAtBottom, updateActivityFeed } from "./activity.js";
 import { esc, icon } from "./components/icons.js";
 import { createMissionControlDrafts } from "./drafts.js";
 import {
@@ -33,6 +34,11 @@ const state = {
   lastRefreshedAt: null,
   filter: "all", // all | attention | running
   search: "",
+  overviewHideSettled: false,
+  overviewExpandedProjects: new Set(),
+  overviewExpandedQuiet: new Set(),
+  overviewSettledTab: new Map(),
+  overviewSettledLimit: new Map(),
   usage: null,
   usageLoading: false,
   usageFetchedAt: 0,
@@ -42,6 +48,7 @@ const state = {
   snap: null,
   selectedThreadId: "",
   detail: null,
+  activity: null,
   detailError: null,
   detailKey: "",
   composerKey: "",
@@ -275,6 +282,7 @@ function resetPollTimer() {
 }
 
 function syncVisibility() {
+  syncActivitySubscription();
   if (document.hidden || window.phoenix.visible === false) {
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = null;
@@ -412,7 +420,74 @@ function ensureInspectorContainers() {
   return { insp, main, foot };
 }
 
+let watchedActivityThread = null;
+function syncActivitySubscription() {
+  if (!window.phoenix.activity?.available) return;
+  const next =
+    !document.hidden &&
+    window.phoenix.visible !== false &&
+    state.view !== "usage" &&
+    state.inspectorTab === "activity" &&
+    (window.innerWidth >= 1100 || state.inspectorOpen)
+      ? state.selectedThreadId || null
+      : null;
+  if (next === watchedActivityThread) return;
+  watchedActivityThread = next;
+  if (next && state.activity?.threadId !== next) state.activity = null;
+  void window.phoenix.activity.watch(next).catch(() => {
+    if (next && watchedActivityThread === next) {
+      state.activity = {
+        threadId: next,
+        status: "error",
+        running: false,
+        entries: [],
+        truncated: false,
+      };
+      renderLiveActivity();
+    }
+  });
+}
+
+function renderLiveActivity(options) {
+  if (state.inspectorTab !== "activity" || state.detail?.id !== state.selectedThreadId) return;
+  const snapshot =
+    state.activity?.threadId === state.selectedThreadId
+      ? state.activity
+      : {
+          threadId: state.selectedThreadId,
+          status: window.phoenix.activity?.available ? "loading" : "snapshot",
+          running: false,
+          entries: (state.detail.activity || []).map((entry) => ({
+            id: entry.id,
+            kind: entry.from === "you" ? "user" : "assistant",
+            label: entry.from === "you" ? "You" : "Assistant",
+            body: entry.body,
+            status: "completed",
+            time: entry.time,
+          })),
+          truncated: state.detail.historyTruncated,
+        };
+  updateActivityFeed($("mc-insp-main"), snapshot, options);
+}
+
+window.addEventListener("phoenix-activity", (event) => {
+  if (event.detail?.threadId !== state.selectedThreadId || !watchedActivityThread) return;
+  state.activity = event.detail;
+  renderLiveActivity();
+});
+
+document.addEventListener(
+  "scroll",
+  (event) => {
+    if (event.target.id !== "mc-insp-scroll" || state.inspectorTab !== "activity") return;
+    const jump = document.querySelector(".mc-live-jump");
+    if (jump) jump.hidden = isActivityAtBottom(event.target);
+  },
+  true,
+);
+
 function renderInspector(force = false) {
+  syncActivitySubscription();
   state.composerDraft = drafts.get(state.selectedThreadId);
   state.sendingReply = drafts.isSending(state.selectedThreadId);
   const { insp, main, foot } = ensureInspectorContainers();
@@ -432,7 +507,13 @@ function renderInspector(force = false) {
   );
 
   if (force || nextDetailKey !== state.detailKey) {
-    const prevScroll = $("mc-insp-scroll")?.scrollTop || 0;
+    const previousScroll = $("mc-insp-scroll");
+    const previousFeed = main.querySelector(".mc-live-feed");
+    const sameActivity =
+      previousFeed?.dataset.threadId === state.selectedThreadId &&
+      state.inspectorTab === "activity";
+    const followActivity = !sameActivity || !previousScroll || isActivityAtBottom(previousScroll);
+    const prevScroll = previousScroll?.scrollTop || 0;
     const expandedEvidence = [...main.querySelectorAll("details[data-evidence-id][open]")].map(
       (node) => node.dataset.evidenceId,
     );
@@ -440,9 +521,12 @@ function renderInspector(force = false) {
     for (const node of main.querySelectorAll("details[data-evidence-id]")) {
       if (expandedEvidence.includes(node.dataset.evidenceId)) node.open = true;
     }
+    if (sameActivity) main.querySelector(".mc-live-feed")?.replaceWith(previousFeed);
     state.detailKey = nextDetailKey;
     const nextScroll = $("mc-insp-scroll");
-    if (nextScroll && prevScroll > 0) nextScroll.scrollTop = prevScroll;
+    if (nextScroll && (state.inspectorTab !== "activity" || sameActivity))
+      nextScroll.scrollTop = prevScroll;
+    renderLiveActivity({ follow: followActivity });
   }
 
   const composerDetail = state.detail?.id === state.selectedThreadId ? state.detail : null;
@@ -763,6 +847,7 @@ function runPaletteItem(item) {
 
 function setView(view) {
   state.view = VALID_VIEWS.has(view) ? view : "inbox";
+  syncActivitySubscription();
   renderRail();
   renderHeader();
   syncBackdrop();
@@ -921,6 +1006,7 @@ async function selectThread(threadId, opts = {}) {
   const changed = state.selectedThreadId !== threadId;
   state.selectedThreadId = threadId;
   if (changed) {
+    state.activity = null;
     state.detail = null;
     state.detailError = null;
     state.composerDraft = drafts.get(threadId);
@@ -1163,6 +1249,62 @@ document.addEventListener("click", (e) => {
     return;
   }
 
+  const toggleSettled = e.target.closest("[data-toggle-settled-project]");
+  if (toggleSettled) {
+    const projectId = toggleSettled.dataset.toggleSettledProject;
+    if (state.overviewExpandedProjects.has(projectId)) {
+      state.overviewExpandedProjects.delete(projectId);
+    } else {
+      state.overviewExpandedProjects.add(projectId);
+    }
+    renderActiveView();
+    return;
+  }
+
+  const toggleQuiet = e.target.closest("[data-toggle-quiet-project]");
+  if (toggleQuiet) {
+    const projectId = toggleQuiet.dataset.toggleQuietProject;
+    if (state.overviewExpandedQuiet.has(projectId)) {
+      state.overviewExpandedQuiet.delete(projectId);
+    } else {
+      state.overviewExpandedQuiet.add(projectId);
+    }
+    renderActiveView();
+    return;
+  }
+
+  const settledTab = e.target.closest("[data-settled-tab]");
+  if (settledTab) {
+    const raw = settledTab.dataset.settledTab || "";
+    const idx = raw.lastIndexOf(":");
+    if (idx > 0) {
+      const projectId = raw.slice(0, idx);
+      const tab = raw.slice(idx + 1);
+      state.overviewSettledTab.set(projectId, tab);
+      state.overviewSettledLimit.delete(projectId);
+      renderActiveView();
+    }
+    return;
+  }
+
+  const settledMore = e.target.closest("[data-settled-more]");
+  if (settledMore) {
+    const projectId = settledMore.dataset.settledMore;
+    const current = state.overviewSettledLimit.get(projectId) || 8;
+    state.overviewSettledLimit.set(projectId, current + 12);
+    renderActiveView();
+    return;
+  }
+
+  const settledAll = e.target.closest("[data-settled-all]");
+  if (settledAll) {
+    const projectId = settledAll.dataset.settledAll;
+    const total = Number(settledAll.dataset.settledTotal) || 500;
+    state.overviewSettledLimit.set(projectId, total);
+    renderActiveView();
+    return;
+  }
+
   const selThread = e.target.closest("[data-select-thread]");
   if (selThread) {
     selectThread(selThread.dataset.selectThread, { openDrawer: true, openConversation: true });
@@ -1188,7 +1330,11 @@ document.addEventListener("click", (e) => {
   const actionEl = e.target.closest("[data-action]");
   if (actionEl) {
     const action = actionEl.dataset.action;
-    if (action === "next-attention") nextAttention();
+    if (action === "activity-latest") {
+      const scroll = $("mc-insp-scroll");
+      if (scroll) scroll.scrollTop = scroll.scrollHeight;
+      document.querySelector(".mc-live-jump").hidden = true;
+    } else if (action === "next-attention") nextAttention();
     else if (action === "undo-triage") void undoTriage();
     else if (action === "new-thread") openNewThreadModal("");
     else if (action === "toggle-plugins") {
@@ -1198,9 +1344,15 @@ document.addEventListener("click", (e) => {
     else if (action === "toggle-settings") toggleSettingsPopover();
     else if (action === "close-settings") closeSettingsPopover();
     else if (action === "refresh-usage") loadUsage(true);
-    else if (action === "clear-filters") {
+    else if (action === "toggle-overview-settled") {
+      state.overviewHideSettled = !state.overviewHideSettled;
+      if (!state.overviewHideSettled) state.overviewExpandedQuiet.clear();
+      renderActiveView();
+    } else if (action === "clear-filters") {
       state.filter = "all";
       state.search = "";
+      state.overviewHideSettled = false;
+      state.overviewExpandedQuiet.clear();
       if ($("mc-search")) $("mc-search").value = "";
       renderHeader();
       renderActiveView();
@@ -1329,6 +1481,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("resize", () => {
+  syncActivitySubscription();
   if (window.innerWidth >= 1100 && state.inspectorOpen) {
     state.inspectorOpen = false;
   }

@@ -91,7 +91,7 @@ export const makeCli = ({ cloudEnabled = hasCloudPublicConfig } = {}) =>
       environmentCommand,
       browserCommand,
       projectCommand,
-      pluginCommand,
+    pluginCommand,
       threadCommand,
       workflowCommand,
       upCommand,

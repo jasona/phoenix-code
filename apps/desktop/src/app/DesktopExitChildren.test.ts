@@ -47,8 +47,8 @@ describe.runIf(NodeFS.existsSync("/proc/self/task"))("stopChildProcessesBeforeEx
       return child;
     };
     // Chromium rewrites a zygote's argv into one space-separated title.
-    const zygote = await spawnTitled("/opt/M3 Code/t3code --type=zygote --no-sandbox");
-    const utility = await spawnTitled("/opt/M3 Code/t3code --type=utility");
+    const zygote = await spawnTitled("/opt/Phoenix/t3code --type=zygote --no-sandbox");
+    const utility = await spawnTitled("/opt/Phoenix/t3code --type=utility");
     try {
       stopZygotesBeforeExit(process.pid);
 

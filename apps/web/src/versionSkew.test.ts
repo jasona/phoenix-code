@@ -17,7 +17,7 @@ import {
 } from "./versionSkew";
 
 const MISMATCH_HINT =
-  "Version mismatch. Try syncing the client and server to the same M3 Code version.";
+  "Version mismatch. Try syncing the client and server to the same Phoenix version.";
 
 describe("versionSkew", () => {
   it("updates only the proven install and safely quotes its paths", () => {

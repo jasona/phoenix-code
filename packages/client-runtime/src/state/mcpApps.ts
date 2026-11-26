@@ -2,29 +2,20 @@ import { WS_METHODS } from "@t3tools/contracts";
 import type { Atom } from "effect/reactivity";
 
 import type { EnvironmentRegistry } from "../connection/registry.ts";
-import {
-  createEnvironmentRpcSubscriptionAtomFamily,
-  createEnvironmentRpcCommand,
-  createEnvironmentRpcQueryAtomFamily,
-} from "./runtime.ts";
+import { createEnvironmentRpcSubscriptionAtomFamily, createEnvironmentRpcCommand, createEnvironmentRpcQueryAtomFamily } from "./runtime.ts";
 
 export function createMcpAppEnvironmentAtoms<R, E>(
   runtime: Atom.AtomRuntime<EnvironmentRegistry | R, E>,
 ) {
   return {
     pluginsWatch: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
-      label: "plugins:watch",
-      tag: WS_METHODS.pluginsWatch,
-      idleTtlMs: 0,
+      label: "plugins:watch", tag: WS_METHODS.pluginsWatch, idleTtlMs: 0,
     }),
     pluginsSubscribe: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
-      label: "plugins:subscribe",
-      tag: WS_METHODS.pluginsSubscribe,
-      idleTtlMs: 0,
+      label: "plugins:subscribe", tag: WS_METHODS.pluginsSubscribe, idleTtlMs: 0,
     }),
     pluginsHost: createEnvironmentRpcCommand(runtime, {
-      label: "plugins:host",
-      tag: WS_METHODS.pluginsHost,
+      label: "plugins:host", tag: WS_METHODS.pluginsHost,
     }),
     pluginsListQuery: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "plugins:list",

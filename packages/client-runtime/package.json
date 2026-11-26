@@ -680,7 +680,8 @@
       "default": "./src/pullRequestReferences.ts"
     },
     "./plugins/sdk": "./src/plugins/sdk.ts",
-    "./plugins/mission-control-drafts": "./src/plugins/missionControlDrafts.ts"
+    "./plugins/mission-control-drafts": "./src/plugins/missionControlDrafts.ts",
+    "./plugins/mission-control-activity": "./src/plugins/missionControlActivity.ts"
   },
   "scripts": {
     "typecheck": "effect-tsgo tsrs --noEmit",

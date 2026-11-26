@@ -1162,3 +1162,69 @@ it.effect("queues a reply when the run observed by the composer has already comp
     ),
   );
 });
+
+it.effect("exposes settled state and subagent parentThreadId on snapshot thread cards", () => {
+  const parent = thread("parent-thread", {
+    settledOverride: "settled",
+    settledAt: now,
+  });
+  const child = thread("child-thread", {
+    lineage: {
+      rootThreadId: parent.id,
+      parentThreadId: parent.id,
+      relationshipToParent: "subagent",
+    },
+  });
+  const decodeCards = Schema.decodeUnknownSync(
+    Schema.Struct({
+      projects: Schema.Array(
+        Schema.Struct({
+          threads: Schema.Array(
+            Schema.Struct({
+              id: Schema.String,
+              settled: Schema.Boolean,
+              parentThreadId: Schema.NullOr(Schema.String),
+              swarmCount: Schema.Number,
+            }),
+          ),
+        }),
+      ),
+    }),
+  );
+  return Effect.gen(function* () {
+    const service = yield* MissionControl.MissionControl;
+    const result = decodeCards(yield* service.request({ action: "snapshot" }));
+    const byId = new Map(result.projects[0]?.threads.map((entry) => [entry.id, entry]));
+    assert.deepStrictEqual(byId.get("parent-thread"), {
+      id: "parent-thread",
+      settled: true,
+      parentThreadId: null,
+      swarmCount: 1,
+    });
+    assert.deepStrictEqual(byId.get("child-thread"), {
+      id: "child-thread",
+      settled: false,
+      parentThreadId: "parent-thread",
+      swarmCount: 0,
+    });
+  }).pipe(
+    Effect.provide(
+      MissionControl.layer.pipe(
+        Layer.provide(
+          Layer.merge(
+            platform,
+            Layer.mock(Threads.ThreadManagementService)({
+              getShellSnapshot: () =>
+                Effect.succeed({
+                  schemaVersion: 2,
+                  snapshotSequence: 0,
+                  threads: [parent, child],
+                  archivedThreads: [],
+                }),
+            }),
+          ),
+        ),
+      ),
+    ),
+  );
+});

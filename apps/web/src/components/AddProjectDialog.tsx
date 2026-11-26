@@ -206,7 +206,7 @@ function MachineStep({
         <DialogHeader>
           <DialogTitle>Connecting to {connectingHost.alias}…</DialogTitle>
           <DialogDescription>
-            The first time, this installs M3 Code on {connectingHost.alias}. It can take a minute.
+            The first time, this installs Phoenix on {connectingHost.alias}. It can take a minute.
           </DialogDescription>
         </DialogHeader>
         <DialogPanel>

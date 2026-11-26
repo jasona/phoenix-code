@@ -674,7 +674,7 @@ async function persistScopedSettingsPlan(
       return [
         {
           ...environment,
-          message: m(msg("This environment does not support this setting. Update M3 Code on it.")),
+          message: m(msg("This environment does not support this setting. Update Phoenix on it.")),
         },
       ];
     }

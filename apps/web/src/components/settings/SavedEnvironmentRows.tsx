@@ -788,7 +788,7 @@ function ConfiguredCloudLinkRow({
       ) : (
         <SettingsRow
           title={setting("t3-connect").title}
-          description={gt("Run `t3 connect link` on the host, then restart M3 Code there.")}
+          description={gt("Run `t3 connect link` on the host, then restart Phoenix there.")}
         />
       )}
       {signedOut && showSwitch ? null : (

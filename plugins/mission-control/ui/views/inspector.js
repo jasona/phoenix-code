@@ -9,78 +9,9 @@ function handleOf(name, handle) {
 }
 
 function renderActivityTab(detail) {
-  const roster =
-    detail.swarm?.exists && Array.isArray(detail.swarm.roster) ? detail.swarm.roster : [];
-  const rosterHtml =
-    roster.length > 0
-      ? `
-      <div class="mc-roster-strip" role="list" aria-label="Team roster">
-        ${roster
-          .slice(0, 3)
-          .map(
-            (m) => `
-          <div class="mc-roster-chip" role="listitem">
-            <div class="mc-roster-name">
-              ${dotHtml(m.tone || "gray")}
-              <span>${esc(handleOf(m.name, m.handle))}</span>
-            </div>
-            <div class="mc-roster-state">${esc(m.stateLabel || m.status || "Active")}</div>
-          </div>
-        `,
-          )
-          .join("")}
-      </div>
-    `
-      : "";
-
-  const activities = Array.isArray(detail.activity) ? detail.activity : [];
-  const cardsHtml =
-    activities.length > 0
-      ? activities
-          .map((act) => {
-            const fromStr = act.from ? handleOf(act.from) : "@agent";
-            const toStr = act.to ? handleOf(act.to) : "";
-            const badgeTone = safeTone(act.badge?.tone, "green");
-            const hasFoot = Boolean(act.badge || act.filePill || act.stateText);
-
-            return `
-          <article class="mc-activity-card">
-            <div class="mc-activity-head">
-              <div class="mc-activity-actors">
-                <span class="mc-agent-avatar">${icon("swarm")}</span>
-                <span>${esc(fromStr)}</span>
-                ${toStr ? `<span class="mc-activity-arrow" aria-hidden="true">→</span><span>${esc(toStr)}</span>` : ""}
-              </div>
-              <span class="mc-activity-time">${esc(act.time || "")}</span>
-            </div>
-            <div class="mc-activity-text">${highlightMentions(act.body || "")}</div>
-            ${
-              hasFoot
-                ? `
-              <div class="mc-activity-foot">
-                ${
-                  act.badge
-                    ? `
-                  <span class="mc-check-pill tone-${badgeTone}">
-                    ${icon(act.badge.icon === "alert" ? "alert" : "checkCircle")}
-                    <span>${esc(act.badge.text || "")}</span>
-                  </span>
-                `
-                    : ""
-                }
-                ${act.filePill ? `<span class="mc-code-pill">${esc(act.filePill)}</span>` : ""}
-                ${act.stateText ? `<span class="mc-state-text">${esc(act.stateText)}</span>` : ""}
-              </div>
-            `
-                : ""
-            }
-          </article>
-        `;
-          })
-          .join("")
-      : '<div class="mc-empty" style="padding:20px 14px;"><p class="mc-empty-sub">No activity entries recorded for this thread yet.</p></div>';
-
-  return `${detail.pendingRequest ? `<div class="mc-activity-card"><p>A request needs your response.</p><button class="mc-btn-primary" data-action="open-full" data-thread-id="${esc(detail.id)}">Review &amp; respond</button></div>` : ""}${rosterHtml}${cardsHtml}${detail.historyTruncated ? '<p class="mc-thread-sub">Showing recent messages. Open the review desk for the full history.</p>' : ""}`;
+  return `${detail.pendingRequest ? `<div class="mc-activity-card"><p>A request needs your response.</p><button class="mc-btn-primary" data-action="open-full" data-thread-id="${esc(detail.id)}">Review &amp; respond</button></div>` : ""}
+    <div class="mc-live-feed" aria-label="Thread activity"></div>
+    <p class="mc-live-history mc-thread-sub" hidden>Showing recent activity. Open the review desk for full history.</p>`;
 }
 
 function renderTeamTab(detail) {
@@ -338,9 +269,11 @@ export function renderInspectorContent(detail, state, projectPath) {
     </nav>
 
     ${state.detailError ? `<p class="mc-freshness" role="status">${esc(state.detailError)}</p>` : ""}
-    <div class="mc-insp-body" id="mc-insp-scroll">
+    ${tab === "activity" ? '<div class="mc-live-status" role="status"></div>' : ""}
+    <div class="mc-insp-body${tab === "activity" ? " mc-live-scroll" : ""}" id="mc-insp-scroll">
       ${bodyHtml}
     </div>
+    ${tab === "activity" ? '<div class="mc-live-jump" hidden><button type="button" class="mc-btn-subtle" data-action="activity-latest">Jump to latest</button></div>' : ""}
   `;
 }
 

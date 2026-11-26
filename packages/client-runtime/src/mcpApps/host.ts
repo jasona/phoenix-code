@@ -241,10 +241,7 @@ export function makeMcpAppHost(options: McpAppHostOptions): McpAppHost {
   const handleRequest = (id: JsonRpcId, method: string, params: Record<PropertyKey, unknown>) => {
     switch (method) {
       case "phoenix/request": {
-        if (!options.phoenixRequest) {
-          fail(id, -32601, "Phoenix capabilities are unavailable.");
-          return;
-        }
+        if (!options.phoenixRequest) { fail(id, -32601, "Phoenix capabilities are unavailable."); return; }
         answer(id, () => options.phoenixRequest!(params));
         return;
       }

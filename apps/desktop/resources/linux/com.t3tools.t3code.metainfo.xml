@@ -3,16 +3,15 @@
   <id>com.t3tools.t3code</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
-  <name>M3 Code</name>
-  <summary>Desktop GUI for coding agents</summary>
+  <name>Phoenix</name>
+  <summary>Local-first desktop GUI for coding agents</summary>
   <developer id="com.t3tools">
-    <name>T3 Tools Inc.</name>
+    <name>Phoenix Contributors</name>
   </developer>
   <description>
     <p>
-      M3 Code is an open-source desktop app for coding agents. Work with your
-      existing agent subscriptions, review code changes, and run commands in
-      your projects.
+      Phoenix is an open-source, zero-telemetry desktop app for coding agents. Work with local
+      models and agent subscriptions, review code changes, and run commands in your projects.
     </p>
     <p>
       Connect from desktop, web, or mobile to continue working remotely.

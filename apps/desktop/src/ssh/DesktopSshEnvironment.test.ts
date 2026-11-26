@@ -12,14 +12,14 @@ import { resolveDesktopSshCliRunner } from "./DesktopSshEnvironment.ts";
 const packagedEnvironment = DesktopEnvironment.DesktopEnvironment.pipe(
   Effect.provide(
     DesktopEnvironment.layer({
-      dirname: "/Applications/M3 Code.app/Contents/Resources/app.asar/dist-electron",
+      dirname: "/Applications/Phoenix.app/Contents/Resources/app.asar/dist-electron",
       homeDirectory: "/Users/alice",
       platform: "darwin",
       processArch: "arm64",
       appVersion: "0.0.22",
-      appPath: "/Applications/M3 Code.app/Contents/Resources/app.asar",
+      appPath: "/Applications/Phoenix.app/Contents/Resources/app.asar",
       isPackaged: true,
-      resourcesPath: "/Applications/M3 Code.app/Contents/Resources",
+      resourcesPath: "/Applications/Phoenix.app/Contents/Resources",
       runningUnderArm64Translation: false,
     }).pipe(
       Layer.provide(

@@ -1,5 +1,10 @@
 import { scopedThreadKey } from "@t3tools/client-runtime/environment";
 import { isMissionControlDraftOperation } from "@t3tools/client-runtime/plugins/mission-control-drafts";
+import {
+  isMissionControlActivityOperation,
+  projectMissionControlActivity,
+  type MissionControlActivitySnapshot,
+} from "@t3tools/client-runtime/plugins/mission-control-activity";
 import { missionControlDrafts } from "~/state/mission-control-drafts";
 import { useOpenMissionControl } from "../../hooks/useOpenMissionControl";
 import { PluginConfiguration } from "./PluginConfiguration";
@@ -37,6 +42,9 @@ import { useProjects, useQuietThreadShell, useServerConfigs } from "~/state/enti
 import { useComposerDraftStore } from "~/composerDraftStore";
 import { requestConfirmDialog } from "~/confirmDialog";
 import { isElectron } from "~/env";
+import { appAtomRegistry } from "~/rpc/atomRegistry";
+import { environmentThreadDetails } from "~/state/threads";
+import { m } from "~/i18n/messages";
 
 const OpenedView = Schema.Struct({
   instanceId: Schema.optional(Schema.String),
@@ -417,6 +425,38 @@ export function PluginView(props: {
     nextOffset: number | null;
   } | null>(null);
   const hostRef = useRef<McpAppHost | null>(null);
+  const activityRef = useRef<MissionControlActivitySnapshot | null>(null);
+  const [activityThreadId, setActivityThreadId] = useState<ThreadId | null>(null);
+  const liveActivitySupported =
+    props.pluginId === "mission-control" &&
+    opened?.capabilities?.includes("missionControl") === true &&
+    !failed;
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- Mirrors the selected thread's shared subscription into the plugin frame, coalescing streamed text without rerendering the host.
+  useEffect(() => {
+    activityRef.current = null;
+    hostRef.current?.updateHostContext();
+    if (!liveActivitySupported || props.active === false || activityThreadId === null) return;
+    const atom = environmentThreadDetails.stateAtom({ environmentId, threadId: activityThreadId });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const publish = () => {
+      timer = undefined;
+      activityRef.current = projectMissionControlActivity(
+        activityThreadId,
+        appAtomRegistry.get(atom),
+        m,
+      );
+      hostRef.current?.updateHostContext();
+    };
+    const unsubscribe = appAtomRegistry.subscribe(atom, () => {
+      if (timer === undefined) timer = setTimeout(publish, 100);
+    });
+    publish();
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+      activityRef.current = null;
+    };
+  }, [activityThreadId, environmentId, liveActivitySupported, props.active]);
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- Keep the mounted MCP bridge synchronized with host appearance and bound thread metadata.
   useEffect(() => {
     hostRef.current?.updateHostContext();
@@ -443,6 +483,12 @@ export function PluginView(props: {
   const perform = useStableCallback(async (raw: unknown) => {
     if (!opened?.instanceId) throw new Error("Reopen this plugin view to use host actions.");
     const instanceId = opened.instanceId;
+    if (isMissionControlActivityOperation(raw)) {
+      if (!liveActivitySupported)
+        throw new Error("This plugin cannot watch Mission Control activity.");
+      setActivityThreadId(raw.threadId);
+      return { watching: raw.threadId };
+    }
     if (isNewThreadOperation(raw)) {
       if (
         props.pluginId !== "mission-control" ||
@@ -531,6 +577,8 @@ export function PluginView(props: {
     perform,
     context: context.data,
     surfaces,
+    liveActivitySupported,
+    activity: activityRef.current,
   }));
   const attach = useStableCallback((frame: HTMLIFrameElement) => {
     const { opened, props } = live();
@@ -557,6 +605,8 @@ export function PluginView(props: {
         "phoenix/visible": live().props.active !== false,
         "phoenix/nativeThreadDialog": Boolean(live().props.onInspectThread),
         "phoenix/nativeNewThreadDialog": Boolean(live().props.onNewThread),
+        "phoenix/liveActivity": live().liveActivitySupported,
+        "phoenix/activity": live().activity,
         styles: { variables: mcpAppStyleVariables(live().theme.variables) },
         displayMode: "fullscreen",
         availableDisplayModes: ["fullscreen"],

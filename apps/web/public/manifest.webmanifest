@@ -1,12 +1,12 @@
 {
   "id": "/",
-  "name": "M3 Code",
-  "short_name": "M3 Code",
+  "name": "Phoenix",
+  "short_name": "Phoenix",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#161616",
-  "theme_color": "#161616",
+  "background_color": "#141312",
+  "theme_color": "#141312",
   "icons": [
     {
       "src": "/favicon-32x32.png",

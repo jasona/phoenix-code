@@ -333,7 +333,7 @@ function SimlockHostsRow() {
           <Link to="/settings/devices" className="underline underline-offset-2">
             Devices
           </Link>
-          . An alpha that may change or break. M3 Code never installs Simlock.
+          . An alpha that may change or break. Phoenix never installs Simlock.
         </T>
       }
       control={

@@ -54,6 +54,7 @@ function summarize(
   children: number,
   now: DateTime.Utc,
   reviews: ReadonlyMap<ThreadId, { runId: string; settledAt: string; acceptedAt: string }>,
+  parentThreadId: string | null,
 ) {
   const pending = thread.pendingRuntimeRequest;
   const running = thread.activeRunId !== null;
@@ -185,6 +186,8 @@ function summarize(
     accepted,
     canDismiss,
     dismissed,
+    settled: thread.settledOverride === "settled",
+    parentThreadId,
     acceptedAt: accepted ? (review?.acceptedAt ?? null) : null,
     snoozed,
     snoozedUntil: thread.snoozedUntil ? DateTime.formatIso(thread.snoozedUntil) : null,
@@ -378,14 +381,24 @@ const make = Effect.gen(function* () {
           (t) => !t.deletedAt && !t.archivedAt && activeIds.has(t.projectId),
         );
         const children = new Map<string, number>();
+        const parentByThread = new Map<string, string>();
         for (const t of candidates) {
           const parent =
             t.delegatedFrom?.threadId ??
             (t.lineage.relationshipToParent === "subagent" ? t.lineage.parentThreadId : null);
-          if (parent) children.set(parent, (children.get(parent) ?? 0) + 1);
+          if (parent) {
+            parentByThread.set(t.id, parent);
+            children.set(parent, (children.get(parent) ?? 0) + 1);
+          }
         }
         const summaries = candidates.map((t) => ({
-          ...summarize(t, children.get(t.id) ?? 0, now, reviewMap),
+          ...summarize(
+            t,
+            children.get(t.id) ?? 0,
+            now,
+            reviewMap,
+            parentByThread.get(t.id) ?? null,
+          ),
           projectId: t.projectId,
         }));
         const priority = (card: (typeof summaries)[number]) =>
@@ -889,6 +902,10 @@ const make = Effect.gen(function* () {
         roster.length,
         now,
         new Map((yield* reviews.read()).map((entry) => [entry.threadId, entry])),
+        thread.delegatedFrom?.threadId ??
+          (thread.lineage.relationshipToParent === "subagent"
+            ? thread.lineage.parentThreadId
+            : null),
       );
       const runItems = activityPage.items
         .map(({ item }) => item)

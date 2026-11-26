@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phoenix — Aicher Slate &amp; Vermilion</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1440px;height:900px;overflow:hidden;background:#111316;color:#F2EFE9;font-family:"Archivo",system-ui,sans-serif;font-size:13px;line-height:1.45}
+  .shell{display:grid;grid-template-columns:276px 1fr;width:1440px;height:900px}
+  .sidebar{background:#181D24;border-right:1px solid #272F3A;display:flex;flex-direction:column;justify-content:space-between}
+  .brand{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 14px;border-bottom:1px solid #272F3A}
+  .brand-id{display:flex;align-items:center;gap:10px}
+  .brand-name{font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#F2EFE9;line-height:1}
+  .tag{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#97A0AC;border:1px solid #272F3A;padding:2px 6px}
+  .new-btn{margin:12px 16px;padding:8px 12px;background:#EE4B2B;color:#111316;font-weight:700;font-size:12px;letter-spacing:.02em;display:flex;justify-content:space-between;align-items:center}
+  .sec-hdr{padding:10px 16px 6px;font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#97A0AC;display:flex;justify-content:space-between}
+  .row{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;padding:8px 16px;border-top:1px solid #202731;font-size:12.5px}
+  .row.active{background:#EE4B2B;color:#111316;font-weight:700;border-color:#EE4B2B}
+  .mark{font-family:"JetBrains Mono",monospace;font-size:11px;text-align:center}
+  .mark.teal{color:#2AA198}.mark.ochre{color:#E5A93C}.mark.idle{color:#97A0AC}
+  .meta-t{font-family:"JetBrains Mono",monospace;font-size:11px;opacity:.75}
+  .settled{padding:10px 16px;border-top:1px solid #272F3A;font-size:12px;color:#97A0AC;display:flex;justify-content:space-between}
+  .hosts{border-top:1px solid #272F3A;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+  .host{border-left:2px solid #2AA198;padding-left:10px}
+  .host.down{border-left-color:#3A4452;opacity:.55}
+  .host-top{display:flex;justify-content:space-between;font-weight:600;font-size:12px}
+  .host-sub{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:#97A0AC;margin-top:2px}
+  .main{display:grid;grid-template-rows:56px 1fr 122px;background:#111316}
+  .hdr{display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid #272F3A;background:#151920}
+  .crumb{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}
+  .branch{font-family:"JetBrains Mono",monospace;font-size:11px;color:#97A0AC;border:1px solid #272F3A;padding:2px 8px}
+  .tstrip{display:grid;grid-auto-flow:column;border:1px solid #272F3A;font-family:"JetBrains Mono",monospace;font-size:11px}
+  .tcell{padding:5px 11px;border-left:1px solid #272F3A;text-align:right;color:#F2EFE9}
+  .tcell:first-child{border-left:none;color:#2AA198;font-weight:500}
+  .tcell span{color:#97A0AC;margin-right:5px;font-size:10px}
+  .timeline{padding:24px 56px;display:flex;flex-direction:column;gap:20px;overflow:hidden}
+  .msg-user{align-self:flex-end;max-width:680px;background:#181D24;border:1px solid #272F3A;padding:12px 16px}
+  .author{font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#97A0AC;margin-bottom:6px;display:flex;gap:10px}
+  .msg-agent{max-width:860px;border-left:2px solid #EE4B2B;padding-left:18px}
+  .author .local{color:#2AA198}
+  .diff{margin-top:12px;border:1px solid #272F3A;background:#15181E;font-family:"JetBrains Mono",monospace;font-size:12px}
+  .diff-hdr{padding:6px 12px;border-bottom:1px solid #272F3A;color:#97A0AC;display:flex;justify-content:space-between;font-size:11px}
+  .dline{padding:3px 12px;display:grid;grid-template-columns:32px 1fr}
+  .dline.del{background:rgba(238,75,43,.13);color:#F7B4A7}
+  .dline.add{background:rgba(42,161,152,.14);color:#9FE6E0}
+  .composer-wrap{padding:14px 56px 20px;border-top:1px solid #272F3A;background:#151920}
+  .composer{border:1px solid #272F3A;background:#111316;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  .comp-top{color:#97A0AC;font-size:13px}
+  .comp-bar{display:flex;justify-content:space-between;align-items:center}
+  .comp-meta{display:flex;gap:10px;align-items:center;font-family:"JetBrains Mono",monospace;font-size:11px}
+  .pill{border:1px solid #272F3A;padding:3px 9px;color:#F2EFE9}
+  .pill.teal{border-color:#2AA198;color:#2AA198}
+  .send{background:#EE4B2B;color:#111316;font-weight:700;padding:6px 16px;font-size:12px;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div>
+      <div class="brand">
+        <div class="brand-id">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect width="28" height="28" fill="#111316"/>
+            <path d="M4 20L12 12V7L4 15V20Z" fill="#F2EFE9"/>
+            <path d="M24 20L16 12V7L24 15V20Z" fill="#F2EFE9"/>
+            <path d="M14 4L17 9L14 14L11 9L14 4Z" fill="#EE4B2B"/>
+            <rect x="4" y="22" width="20" height="2" fill="#2AA198"/>
+          </svg>
+          <span class="brand-name">Phoenix</span>
+        </div>
+        <span class="tag">LOCAL</span>
+      </div>
+      <div class="new-btn"><span>+ New thread</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">⌘N</span></div>
+      <div class="sec-hdr"><span>phoenix-code</span><span>main</span></div>
+      <div class="row active"><span class="mark">◆</span><span>Rebrand shell &amp; icons</span><span class="meta-t">now</span></div>
+      <div class="row"><span class="mark teal">■</span><span>Local vision probe fallback</span><span class="meta-t">14m</span></div>
+      <div class="row"><span class="mark ochre">▤</span><span>Fix SQLite WAL contention</span><span class="meta-t">1h</span></div>
+      <div class="row"><span class="mark idle">○</span><span>Audit zero-telemetry strip</span><span class="meta-t">3h</span></div>
+      <div class="settled"><span>Settled threads</span><span style="font-family:'JetBrains Mono',monospace">5</span></div>
+    </div>
+    <div class="hosts">
+      <div class="sec-hdr" style="padding:0 0 2px"><span>Inference Hosts</span><span>1 / 2 UP</span></div>
+      <div class="host">
+        <div class="host-top"><span>spark5 · GLM-5-Flash</span><span style="font-family:'JetBrains Mono',monospace;color:#2AA198">84 t/s</span></div>
+        <div class="host-sub">Local · Reads images · 128k ctx</div>
+      </div>
+      <div class="host down">
+        <div class="host-top"><span>mac-studio · Qwen-32B</span><span style="font-family:'JetBrains Mono',monospace">OFF</span></div>
+        <div class="host-sub">SSH · Unreachable · Fallback off</div>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="hdr">
+      <div class="crumb"><span>phoenix-code / Rebrand shell &amp; icons</span><span class="branch">feat/phoenix-brand</span></div>
+      <div class="tstrip">
+        <div class="tcell">spark5 · GLM-5-Flash · LOCAL</div>
+        <div class="tcell"><span>TTFT</span>0.42s</div>
+        <div class="tcell"><span>DEC</span>84 tok/s</div>
+        <div class="tcell"><span>CACHE</span>92%</div>
+      </div>
+    </header>
+    <section class="timeline">
+      <div class="msg-user">
+        <div class="author"><span>Jason</span><span>10:42</span></div>
+        <div>Replace the incumbent T3 wordmark and default theme tokens with the new Phoenix palette across <code>branding.ts</code> and <code>themePalettes.ts</code>.</div>
+      </div>
+      <div class="msg-agent">
+        <div class="author"><span>Phoenix · Pi</span><span class="local">spark5 / GLM-5-Flash</span><span>412 tok</span></div>
+        <div>Updated <code>APP_BASE_NAME</code> to <strong>Phoenix</strong> and mapped the committed slate-indigo sidebar, mineral graphite canvas, and signal vermilion tokens in <code>themePalettes.ts</code>. Zero telemetry calls remain.</div>
+        <div class="diff">
+          <div class="diff-hdr"><span>apps/web/src/branding.ts</span><span>+2  -2</span></div>
+          <div class="dline"><span>21</span><span>export const HOSTED_APP_CHANNEL_LABEL = resolveHostedAppChannelLabel(HOSTED_APP_CHANNEL);</span></div>
+          <div class="dline del"><span>22</span><span>- export const APP_BASE_NAME = injectedDesktopAppBranding?.baseName ?? "M3 Code";</span></div>
+          <div class="dline add"><span>22</span><span>+ export const APP_BASE_NAME = injectedDesktopAppBranding?.baseName ?? "Phoenix";</span></div>
+          <div class="dline"><span>23</span><span>export const APP_STAGE_LABEL = injectedDesktopAppBranding?.stageLabel ?? ...</span></div>
+          <div class="dline del"><span>33</span><span>- export const DESKTOP_DOWNLOAD_URL = "https://t3.codes/download";</span></div>
+          <div class="dline add"><span>33</span><span>+ export const DESKTOP_DOWNLOAD_URL = "";</span></div>
+        </div>
+      </div>
+    </section>
+    <footer class="composer-wrap">
+      <div class="composer">
+        <div class="comp-top">Reply to Rebrand shell &amp; icons…</div>
+        <div class="comp-bar">
+          <div class="comp-meta">
+            <span class="pill">spark5 · GLM-5-Flash · Local</span>
+            <span class="pill teal">Local models only</span>
+          </div>
+          <div class="send">Send ↵</div>
+        </div>
+      </div>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

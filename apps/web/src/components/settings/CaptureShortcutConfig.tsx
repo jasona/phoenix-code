@@ -225,7 +225,7 @@ export function CaptureShortcutConfig({
         <>
           <p className="text-muted-foreground">
             <T>
-              Allow M3 Code to read your desktop settings. You'll review any changes here before
+              Allow Phoenix to read your desktop settings. You'll review any changes here before
               saving.
             </T>
           </p>
@@ -247,7 +247,7 @@ export function CaptureShortcutConfig({
         <p role="status" className="text-muted-foreground">
           {state.shortcutPending
             ? gt("Connecting to your desktop…")
-            : gt("Restart M3 Code to finish connecting your shortcut.")}
+            : gt("Restart Phoenix to finish connecting your shortcut.")}
         </p>
       ) : null}
       <details className="text-xs text-muted-foreground">
@@ -274,7 +274,7 @@ export function CaptureShortcutConfig({
             </p>
             {niri ? (
               <p>
-                <T>M3 Code also reads any files included by this file.</T>
+                <T>Phoenix also reads any files included by this file.</T>
               </p>
             ) : null}
             {preview && preview.resolvedPath !== preview.path ? (
@@ -353,7 +353,7 @@ export function CaptureShortcutConfig({
           </Button>
           <p>
             <T>
-              Turn capture off in M3 Code to stop it. Remove the shortcut from <Var>{desktop}</Var>{" "}
+              Turn capture off in Phoenix to stop it. Remove the shortcut from <Var>{desktop}</Var>{" "}
               to free up the keys.
             </T>
           </p>

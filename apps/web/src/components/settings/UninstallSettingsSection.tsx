@@ -74,7 +74,7 @@ export function UninstallSettingsSection() {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: m(msg("Could not uninstall M3 Code")),
+          title: m(msg("Could not uninstall Phoenix")),
           description:
             error instanceof Error
               ? (thrownErrorMessage(error, m) ?? error.message)
@@ -85,10 +85,7 @@ export function UninstallSettingsSection() {
   };
 
   const canConfirm =
-    !loadingPlan &&
-    !running &&
-    plan !== null &&
-    confirmationText.trim() === CONFIRMATION_PHRASE;
+    !loadingPlan && !running && plan !== null && confirmationText.trim() === CONFIRMATION_PHRASE;
 
   return (
     <>
@@ -96,12 +93,12 @@ export function UninstallSettingsSection() {
         <SettingsRow
           {...setting("uninstall-app")}
           description={gt(
-            "Permanently remove M3 Code, its background service, CLI command, databases, settings, caches, and local data from this computer.",
+            "Permanently remove Phoenix, its background service, CLI command, databases, settings, caches, and local data from this computer.",
           )}
           control={
             <Button size="sm" variant="destructive-outline" onClick={openDialog}>
               <Trash2Icon />
-              <T>Uninstall M3 Code</T>
+              <T>Uninstall Phoenix</T>
             </Button>
           }
         />
@@ -117,13 +114,13 @@ export function UninstallSettingsSection() {
         <AlertDialogPopup>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              <T>Uninstall M3 Code completely?</T>
+              <T>Uninstall Phoenix completely?</T>
             </AlertDialogTitle>
             <AlertDialogDescription>
               <div className="flex flex-col gap-3">
                 <p>
                   <T>
-                    This permanently deletes M3 Code from this computer, including all local
+                    This permanently deletes Phoenix from this computer, including all local
                     threads, databases, settings, caches, preferences, background services, and the
                     CLI command. Your project repositories on disk are not touched.
                   </T>
@@ -143,9 +140,7 @@ export function UninstallSettingsSection() {
                         <li>{gt("Background service (stopped and unregistered)")}</li>
                       ) : null}
                       {plan.cliCommandPath ? (
-                        <li>
-                          {gt("CLI command: {path}", { path: plan.cliCommandPath })}
-                        </li>
+                        <li>{gt("CLI command: {path}", { path: plan.cliCommandPath })}</li>
                       ) : null}
                       {plan.paths.map((targetPath) => (
                         <li key={targetPath} className="break-all">

@@ -26,7 +26,7 @@ vi.hoisted(() => {
   electronModule.exports = {
     app: {
       getVersion: () => "1.0.0",
-      getName: () => "M3 Code",
+      getName: () => "Phoenix",
       isPackaged: true,
       quit: () => undefined,
       once: () => undefined,

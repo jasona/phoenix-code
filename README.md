@@ -1,7 +1,7 @@
-# M3 Code
+# Phoenix
 
 <p align="center">
-  <img src="m3-code.png" alt="M3 Code" width="100%">
+  <img src="assets/prod/logo.svg" alt="Phoenix" width="128" height="128">
 </p>
 
 > [!WARNING]
@@ -20,10 +20,12 @@
 > model-price fetches, and app update checks. See [docs/user/network-calls.md](./docs/user/network-calls.md)
 > for the complete list.
 
-**M3 Code** is this fork's name for the app. It is a fork of
+**Phoenix** is this fork's name for the app. It is an unofficial fork of M3 Code, itself a fork of
 [T3 Code](https://github.com/pingdotgg/t3code); "T3 Code" below refers to that upstream project.
 For everything upstream does, see the upstream README. This page covers only what this fork adds;
 [MIA_CHANGELOG.md](./MIA_CHANGELOG.md) lists every change in order.
+
+See [DESIGN.md](./DESIGN.md) and [PRODUCT.md](./PRODUCT.md) for Phoenix's visual design system and product specification.
 
 ## Latest local-model improvements
 

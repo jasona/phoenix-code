@@ -52,6 +52,8 @@ export function useMissionControlNewThread() {
       if (placement?.maximized !== undefined)
         useMissionControlWindowStore.getState().setMaximized(key, placement.maximized);
       useMissionControlStore.getState().closeWindow(previousKey);
+    } else if (!existing && !replacingKey) {
+      useMissionControlWindowStore.getState().applyNewThreadPlacement(key);
     }
     useMissionControlStore.getState().openDraft(ref, opened.draftId, instanceId);
     return opened;

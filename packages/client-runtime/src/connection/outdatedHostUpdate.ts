@@ -116,7 +116,7 @@ export const updateOutdatedHost = Effect.fn("clientRuntime.connection.updateOutd
       return yield* new OutdatedHostUpdateError({
         environmentId,
         ...translatableMessage(
-          msg("Update M3 Code on {host} manually; it cannot update itself.", {
+          msg("Update Phoenix on {host} manually; it cannot update itself.", {
             host: descriptor.label,
           }),
         ),
@@ -241,7 +241,7 @@ export const updateOutdatedHost = Effect.fn("clientRuntime.connection.updateOutd
       return yield* new OutdatedHostUpdateError({
         environmentId,
         ...translatableMessage(
-          msg("{host} did not come back on a compatible M3 Code version.", {
+          msg("{host} did not come back on a compatible Phoenix version.", {
             host: descriptor.label,
           }),
         ),
