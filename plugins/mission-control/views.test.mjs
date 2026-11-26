@@ -1,5 +1,6 @@
 import * as NodeAssert from "node:assert/strict";
 import * as NodeTest from "node:test";
+import { renderBoard } from "./ui/views/board.js";
 import { renderInspectorContent } from "./ui/views/inspector.js";
 import { renderInbox } from "./ui/views/inbox.js";
 import { renderOverview } from "./ui/views/overview.js";
@@ -256,3 +257,147 @@ NodeTest.test("overview paginates large settled lists inside a project card", ()
   NodeAssert.match(expanded, /Showing 8 of 13/);
   NodeAssert.match(expanded, /data-settled-more="p1"/);
 });
+
+NodeTest.test(
+  "board separates done threads from team runs, suppresses boilerplate subtitles, and supports collapsing and pagination",
+  () => {
+    const doneConversations = Array.from({ length: 24 }, (_, idx) => ({
+      id: `done-${idx + 1}`,
+      title: `Completed work #${idx + 1}`,
+      subtitle: "No messages yet",
+      rightLabel: idx === 0 ? "Dismissed" : "Accepted",
+      accepted: idx !== 0,
+      dismissed: idx === 0,
+      latestRunId: `run-${idx + 1}`,
+      updatedAt: "2026-11-26T15:00:00Z",
+    }));
+    const doneTeamRuns = [
+      {
+        id: "team-child-1",
+        title: "/root/activity_data",
+        subtitle: "No messages yet",
+        rightLabel: "Idle",
+        parentThreadId: "done-2",
+        updatedAt: "2026-11-26T14:30:00Z",
+      },
+      {
+        id: "team-child-2",
+        title: "/root/mobile_activity",
+        subtitle: "No messages yet",
+        rightLabel: "Idle",
+        parentThreadId: "done-2",
+        updatedAt: "2026-11-26T14:20:00Z",
+      },
+    ];
+    const snap = {
+      needsAttention: [
+        {
+          id: "att-1",
+          threadId: "att-thread",
+          category: "review",
+          actions: ["review", "accept"],
+        },
+      ],
+      projects: [
+        {
+          id: "proj-1",
+          name: "crowbaros",
+          branch: "feat/362-viewer",
+          threads: [
+            {
+              id: "run-1",
+              title: "Using the project's process, look at the issues",
+              subtitle: "6 team threads",
+              rightLabel: "Working",
+              dotTone: "green",
+              running: true,
+              hasTeam: true,
+              swarmCount: 6,
+              updatedAt: "2026-11-26T15:45:00Z",
+            },
+            {
+              id: "att-thread",
+              title: "Ready for final review",
+              subtitle: "Finished all checks",
+              rightLabel: "Review ready",
+              dotTone: "blue",
+              needsAttention: true,
+              latestRunId: "run-att",
+            },
+            ...doneConversations,
+            ...doneTeamRuns,
+          ],
+        },
+      ],
+      timeline: [],
+    };
+
+    const defaultHtml = renderBoard(snap, {
+      filter: "all",
+      search: "",
+      selectedThreadId: "team-child-1",
+      boardDoneCollapsed: false,
+      boardDoneTab: "threads",
+      boardDoneLimit: 20,
+    });
+    NodeAssert.match(defaultHtml, /mc-board-shell/);
+    NodeAssert.match(defaultHtml, /data-board-scroll="done"/);
+    NodeAssert.match(defaultHtml, /Completed work #1/);
+    NodeAssert.match(defaultHtml, /Completed work #20/);
+    NodeAssert.doesNotMatch(defaultHtml, /Completed work #21/);
+    NodeAssert.doesNotMatch(defaultHtml, /\/root\/activity_data/);
+    NodeAssert.doesNotMatch(defaultHtml, /No messages yet/);
+    NodeAssert.match(defaultHtml, /Showing 20 of 24/);
+    NodeAssert.match(defaultHtml, /data-board-done-more="1"/);
+    NodeAssert.match(defaultHtml, /data-board-done-tab="team"/);
+    NodeAssert.match(defaultHtml, /data-triage-action="accept"[^>]*data-thread-id="att-thread"/);
+    NodeAssert.match(defaultHtml, /data-triage-action="reopen"[^>]*data-thread-id="done-1"/);
+    NodeAssert.match(defaultHtml, /6 team/);
+
+    const teamTabHtml = renderBoard(snap, {
+      filter: "all",
+      search: "",
+      selectedThreadId: "team-child-1",
+      boardDoneCollapsed: false,
+      boardDoneTab: "team",
+      boardDoneLimit: 20,
+    });
+    NodeAssert.match(teamTabHtml, /\/root\/activity_data/);
+    NodeAssert.match(teamTabHtml, /\/root\/mobile_activity/);
+    NodeAssert.doesNotMatch(teamTabHtml, /Completed work #1/);
+
+    const collapsedHtml = renderBoard(snap, {
+      filter: "all",
+      search: "",
+      selectedThreadId: "team-child-1",
+      boardDoneCollapsed: true,
+      boardDoneTab: "threads",
+      boardDoneLimit: 20,
+    });
+    NodeAssert.match(collapsedHtml, /is-done-collapsed/);
+    NodeAssert.match(collapsedHtml, /data-board-toggle-done="1"[^>]*aria-expanded="false"/);
+    NodeAssert.match(collapsedHtml, /mc-settled-selected-dot/);
+    NodeAssert.doesNotMatch(collapsedHtml, /Completed work #1/);
+
+    const searchHtml = renderBoard(snap, {
+      filter: "all",
+      search: "mobile_activity",
+      selectedThreadId: "",
+      boardDoneCollapsed: true,
+      boardDoneTab: "threads",
+      boardDoneLimit: 20,
+    });
+    NodeAssert.match(searchHtml, /\/root\/mobile_activity/);
+    NodeAssert.doesNotMatch(searchHtml, /is-done-collapsed/);
+
+    const runningOnlyHtml = renderBoard(snap, {
+      filter: "running",
+      search: "",
+      selectedThreadId: "",
+      boardDoneCollapsed: false,
+    });
+    NodeAssert.match(runningOnlyHtml, /is-single-lane/);
+    NodeAssert.match(runningOnlyHtml, /Using the project&#39;s process/);
+    NodeAssert.doesNotMatch(runningOnlyHtml, /aria-label="Done &amp; Idle"/);
+  },
+);
