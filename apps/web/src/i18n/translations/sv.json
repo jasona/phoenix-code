@@ -6214,7 +6214,6 @@
   "7f5a37821edc1814": "Tillåten",
   "86a2917f997a6e61": "Tillåt",
   "40baaf84b74b6875": "Kunde inte kontrollera behörigheter. Vi försöker igen automatiskt.",
-  "04f8f060183c14b9": "Tillbaka till inkorgen",
   "88c5783fe6cce532": "Granska tråd",
   "c4ef3261a5aa4b43": "Försök läsa in granskningsstatus igen",
   "edb149292c71654c": "Öppna granskningen igen",
@@ -12708,5 +12707,13 @@
   "27d76249d09eb69f": "Granskningsguiden är klar",
   "faa3bb26abb39c93": "Granskningsguiden misslyckades",
   "b7df38b7d8792d78": "Öppna guiden",
-  "9e91e9a77b664e4e": "Kunde inte starta en granskningsguide"
+  "9e91e9a77b664e4e": "Kunde inte starta en granskningsguide",
+  "950f3c0b1dd91135": "Granskningsstatus",
+  "a21b6dde037a7339": "Öppna trådfönster",
+  "82a4930df17d2512": "Flytta trådfönster",
+  "55d7d6073979778d": "Dra för att flytta. Använd piltangenterna för att flytta eller Skift + piltangenterna för att ändra storlek.",
+  "b0b4fe3dff5d8f77": "Minimera trådfönster",
+  "d0feffaf56601340": "Återställ trådfönster",
+  "29da41e51bf9d094": "Maximera trådfönster",
+  "7e407e3e353132f4": "Stäng trådfönster"
 }

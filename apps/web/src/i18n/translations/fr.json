@@ -6213,7 +6213,6 @@
   "7f5a37821edc1814": "Autorisé",
   "86a2917f997a6e61": "Autoriser",
   "40baaf84b74b6875": "Impossible de vérifier les autorisations. Nous réessaierons automatiquement.",
-  "04f8f060183c14b9": "Retour à la boîte de réception",
   "88c5783fe6cce532": "Examiner le fil",
   "c4ef3261a5aa4b43": "Réessayer le statut de la revue",
   "edb149292c71654c": "Rouvrir la revue",
@@ -12700,5 +12699,13 @@
   "27d76249d09eb69f": "Guide de revue prêt",
   "faa3bb26abb39c93": "Échec du guide de revue",
   "b7df38b7d8792d78": "Ouvrir le guide",
-  "9e91e9a77b664e4e": "Impossible de démarrer un guide de revue"
+  "9e91e9a77b664e4e": "Impossible de démarrer un guide de revue",
+  "950f3c0b1dd91135": "État de la revue",
+  "a21b6dde037a7339": "Fenêtres de fils ouvertes",
+  "82a4930df17d2512": "Déplacer la fenêtre du fil",
+  "55d7d6073979778d": "Faites glisser pour déplacer. Utilisez les flèches pour déplacer, ou Maj + flèches pour redimensionner.",
+  "b0b4fe3dff5d8f77": "Réduire la fenêtre du fil",
+  "d0feffaf56601340": "Restaurer la fenêtre du fil",
+  "29da41e51bf9d094": "Agrandir la fenêtre du fil",
+  "7e407e3e353132f4": "Fermer la fenêtre du fil"
 }

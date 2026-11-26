@@ -8,21 +8,17 @@ import {
   type ScopedThreadRef,
 } from "@t3tools/contracts";
 import { useGT } from "gt-react";
-import {
-  ArrowLeftIcon,
-  FileCodeIcon,
-  FilesIcon,
-  GlobeIcon,
-  MessageSquareIcon,
-  TerminalIcon,
-} from "lucide-react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { FileCodeIcon, FilesIcon, GlobeIcon, MessageSquareIcon, TerminalIcon } from "lucide-react";
+import { lazy, Suspense, useEffect, useId, useState } from "react";
 import * as Schema from "effect/Schema";
 
 import { useComposerDraftStore } from "../../composerDraftStore";
 import { ComposerHandleContext } from "../../composerHandleContext";
 import { useDiffPanelStore } from "../../diffPanelStore";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
+import {
+  useMissionControlWindowStore,
+  type MissionControlWindowPane,
+} from "../../missionControlWindowStore";
 import { useStableCallback } from "../../hooks/useStableCallback";
 import { useWorkspaceRevision } from "../../hooks/useWorkspaceRevision";
 import type { SideChatParentPanel } from "../../lib/sideChatPane";
@@ -63,7 +59,6 @@ const FilePreviewPanel = lazy(() => import("../files/FilePreviewPanel"));
 const PreviewPanel = lazy(() =>
   import("../preview/PreviewPanel").then((module) => ({ default: module.PreviewPanel })),
 );
-type DeskPane = "conversation" | "changes" | "terminal" | "preview" | "file";
 type DeskFile = Extract<RightPanelSurface, { kind: "file" | "files" }>;
 const isReviewStatus = Schema.is(
   Schema.Struct({
@@ -78,12 +73,14 @@ export function MissionControlReviewDesk({
   threadRef,
   instanceId,
   active,
-  onBack,
+  visible,
+  wide,
 }: {
   readonly threadRef: ScopedThreadRef;
   readonly instanceId: string;
   readonly active: boolean;
-  readonly onBack: () => void;
+  readonly visible: boolean;
+  readonly wide: boolean;
 }) {
   const gt = useGT();
   const shell = useQuietThreadShell(threadRef);
@@ -207,13 +204,7 @@ export function MissionControlReviewDesk({
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="mission-control-review-desk">
       <div className="flex min-h-11 shrink-0 items-center gap-3 border-b border-border px-3 py-2">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeftIcon aria-hidden />
-          {gt("Back to inbox")}
-        </Button>
-        <h2 className="min-w-0 flex-1 truncate text-sm font-medium">
-          {shell?.title ?? gt("Review thread")}
-        </h2>
+        <span className="min-w-0 flex-1 text-xs text-muted-foreground">{gt("Review status")}</span>
         <Button
           size="sm"
           variant={resolved ? "outline" : "default"}
@@ -248,7 +239,7 @@ export function MissionControlReviewDesk({
         </p>
       )}
       {renderState === "ready" ? (
-        <ReviewDeskContent threadRef={threadRef} active={active} />
+        <ReviewDeskContent threadRef={threadRef} active={active} visible={visible} wide={wide} />
       ) : (
         <p className="p-6 text-sm text-muted-foreground" role="status">
           {renderState === "loading"
@@ -263,17 +254,29 @@ export function MissionControlReviewDesk({
 function ReviewDeskContent({
   threadRef,
   active,
+  visible,
+  wide,
 }: {
   readonly threadRef: ScopedThreadRef;
   readonly active: boolean;
+  readonly visible: boolean;
+  readonly wide: boolean;
 }) {
   const gt = useGT();
-  const [pane, setPane] = useState<DeskPane>("conversation");
-  const [file, setFile] = useState<DeskFile | null>(null);
+  const paneId = useId();
+  const threadKey = scopedThreadKey(threadRef);
+  const saved = useMissionControlWindowStore((state) => state.byThreadKey[threadKey]);
+  const pane = saved?.pane ?? "conversation";
+  const file = saved?.file ?? null;
+  const setPane = useStableCallback((value: MissionControlWindowPane) =>
+    useMissionControlWindowStore.getState().setPane(threadKey, value),
+  );
+  const setFile = useStableCallback((value: DeskFile) =>
+    useMissionControlWindowStore.getState().setFile(threadKey, value),
+  );
   const filePath = file?.kind === "file" ? file.relativePath : null;
   const [pendingFiles, setPendingFiles] = useState<ReadonlySet<string>>(new Set());
-  const wide = useMediaQuery("lg");
-  const conversationVisible = active && (pane === "conversation" || wide);
+  const conversationVisible = visible && (pane === "conversation" || wide);
   const shell = useQuietThreadShell(threadRef);
   const projection = useQuietThreadProjection(threadRef);
   const thread = shell ?? projection?.projection.thread ?? null;
@@ -321,7 +324,7 @@ function ReviewDeskContent({
         else if (surface.kind === "terminal") setPane("terminal");
         else if (surface.kind === "diff") setPane("changes");
       }),
-    [active, threadRef],
+    [active, threadRef, setFile, setPane],
   );
 
   const openFile = (relativePath: string) =>
@@ -386,9 +389,9 @@ function ReviewDeskContent({
             type="button"
             role="tab"
             key={tab.id}
-            id={`mission-review-${tab.id}-tab`}
+            id={`${paneId}-${tab.id}-tab`}
             aria-selected={pane === tab.id}
-            aria-controls={`mission-review-${tab.id}-panel`}
+            aria-controls={`${paneId}-${tab.id}-panel`}
             tabIndex={pane === tab.id ? 0 : -1}
             onClick={() => setPane(tab.id)}
             className={cn(
@@ -407,8 +410,8 @@ function ReviewDeskContent({
         <div
           data-side-chat-pane
           role="tabpanel"
-          id="mission-review-conversation-panel"
-          aria-labelledby="mission-review-conversation-tab"
+          id={`${paneId}-conversation-panel`}
+          aria-labelledby={`${paneId}-conversation-tab`}
           hidden={!conversationVisible}
           inert={!conversationVisible}
           className={cn(
@@ -418,7 +421,7 @@ function ReviewDeskContent({
           )}
         >
           <BackgroundThreadContext value>
-            <HiddenThreadContext value={!conversationVisible}>
+            <HiddenThreadContext value={!active || !conversationVisible}>
               <ComposerHandleContext value={null}>
                 <ChatView
                   environmentId={threadRef.environmentId}
@@ -438,7 +441,7 @@ function ReviewDeskContent({
           )}
           inert={!active || pane === "conversation"}
         >
-          {active && (
+          {visible && (
             <Suspense
               fallback={
                 <p className="p-6 text-sm text-muted-foreground" role="status">
@@ -449,8 +452,8 @@ function ReviewDeskContent({
               {pane === "changes" && (
                 <div
                   role="tabpanel"
-                  id="mission-review-changes-panel"
-                  aria-labelledby="mission-review-changes-tab"
+                  id={`${paneId}-changes-panel`}
+                  aria-labelledby={`${paneId}-changes-tab`}
                   className={cn("h-full min-h-0 flex-col", pane === "changes" ? "flex" : "hidden")}
                 >
                   <DiffPanel
@@ -466,8 +469,8 @@ function ReviewDeskContent({
               {pane === "terminal" && (
                 <div
                   role="tabpanel"
-                  id="mission-review-terminal-panel"
-                  aria-labelledby="mission-review-terminal-tab"
+                  id={`${paneId}-terminal-panel`}
+                  aria-labelledby={`${paneId}-terminal-tab`}
                   className="flex min-h-0 flex-1 flex-col"
                 >
                   <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
@@ -555,8 +558,8 @@ function ReviewDeskContent({
               {pane === "preview" && (
                 <div
                   role="tabpanel"
-                  id="mission-review-preview-panel"
-                  aria-labelledby="mission-review-preview-tab"
+                  id={`${paneId}-preview-panel`}
+                  aria-labelledby={`${paneId}-preview-tab`}
                   className="min-h-0 flex-1"
                 >
                   <PreviewPanel
@@ -575,8 +578,8 @@ function ReviewDeskContent({
               {pane === "file" && file && cwd && project && (
                 <div
                   role="tabpanel"
-                  id="mission-review-file-panel"
-                  aria-labelledby="mission-review-file-tab"
+                  id={`${paneId}-file-panel`}
+                  aria-labelledby={`${paneId}-file-tab`}
                   className={cn("min-h-0 flex-1", pane === "file" ? "flex flex-col" : "hidden")}
                 >
                   <FilePreviewPanel

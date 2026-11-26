@@ -6212,7 +6212,6 @@
   "7f5a37821edc1814": "Permitido",
   "86a2917f997a6e61": "Permitir",
   "40baaf84b74b6875": "No se pudieron comprobar los permisos. Lo volveremos a intentar automáticamente.",
-  "04f8f060183c14b9": "Volver a la bandeja de entrada",
   "88c5783fe6cce532": "Revisar hilo",
   "c4ef3261a5aa4b43": "Reintentar estado de revisión",
   "edb149292c71654c": "Reabrir revisión",
@@ -12696,5 +12695,13 @@
   "27d76249d09eb69f": "Guía de revisión lista",
   "faa3bb26abb39c93": "Falló la guía de revisión",
   "b7df38b7d8792d78": "Abrir guía",
-  "9e91e9a77b664e4e": "No se pudo iniciar una guía de revisión"
+  "9e91e9a77b664e4e": "No se pudo iniciar una guía de revisión",
+  "950f3c0b1dd91135": "Estado de revisión",
+  "a21b6dde037a7339": "Ventanas de hilos abiertas",
+  "82a4930df17d2512": "Mover ventana del hilo",
+  "55d7d6073979778d": "Arrastra para mover. Usa las flechas para mover o Mayús + flechas para cambiar el tamaño.",
+  "b0b4fe3dff5d8f77": "Minimizar ventana del hilo",
+  "d0feffaf56601340": "Restaurar ventana del hilo",
+  "29da41e51bf9d094": "Maximizar ventana del hilo",
+  "7e407e3e353132f4": "Cerrar ventana del hilo"
 }

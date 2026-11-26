@@ -1,6 +1,8 @@
 (() => {
   let sequence = 0;
   let visible = true;
+  let nativeThreadDialog = false;
+  let nativeNewThreadDialog = false;
   const pending = new Map();
   function call(method, params) {
     return new Promise((resolve, reject) => {
@@ -17,6 +19,10 @@
   }
   function context(value) {
     if (!value) return;
+    if (typeof value["phoenix/nativeThreadDialog"] === "boolean")
+      nativeThreadDialog = value["phoenix/nativeThreadDialog"];
+    if (typeof value["phoenix/nativeNewThreadDialog"] === "boolean")
+      nativeNewThreadDialog = value["phoenix/nativeNewThreadDialog"];
     const nextVisible =
       typeof value["phoenix/visible"] === "boolean" ? value["phoenix/visible"] : visible;
     if (nextVisible !== visible) {
@@ -68,6 +74,21 @@
       clear: (threadId, expectedText) => draftRequest("clear", threadId, { expectedText }),
     },
     ui: {
+      get nativeThreadDialog() {
+        return nativeThreadDialog;
+      },
+      get nativeNewThreadDialog() {
+        return nativeNewThreadDialog;
+      },
+      async openNewThread(projectId) {
+        await ready;
+        return call("phoenix/request", {
+          type: "missionControlNewThread",
+          ...(projectId ? { projectId } : {}),
+        }).catch((error) =>
+          window.dispatchEvent(new CustomEvent("phoenix-error", { detail: error.message })),
+        );
+      },
       toggleConversation: (threadId) =>
         request({ action: "openThread", threadId }).catch((error) =>
           window.dispatchEvent(new CustomEvent("phoenix-error", { detail: error.message })),

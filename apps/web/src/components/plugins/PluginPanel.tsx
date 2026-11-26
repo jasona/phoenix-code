@@ -4,7 +4,7 @@ import { missionControlDrafts } from "~/state/mission-control-drafts";
 import { useOpenMissionControl } from "../../hooks/useOpenMissionControl";
 import { PluginConfiguration } from "./PluginConfiguration";
 import { useAtomValue } from "@effect/atom-react";
-import { PluginDiagnostics, PluginHostInput, ThreadId } from "@t3tools/contracts";
+import { PluginDiagnostics, PluginHostInput, ProjectId, ThreadId } from "@t3tools/contracts";
 import type {
   EnvironmentId,
   PluginRequestInput,
@@ -58,6 +58,12 @@ const isFilePage = Schema.is(
   }),
 );
 const isThreadResult = Schema.is(Schema.Struct({ threadId: ThreadId }));
+const isNewThreadOperation = Schema.is(
+  Schema.Struct({
+    type: Schema.Literal("missionControlNewThread"),
+    projectId: Schema.optionalKey(ProjectId),
+  }),
+);
 const isFileResult = Schema.is(Schema.Struct({ relativePath: Schema.String }));
 const isHostContext = Schema.is(
   Schema.Struct({
@@ -363,6 +369,7 @@ export function PluginView(props: {
   active?: boolean;
   onOpenThread?: () => void;
   onInspectThread?: (threadRef: ScopedThreadRef, instanceId: string) => void;
+  onNewThread?: (projectRef: ScopedProjectRef | null, instanceId: string) => Promise<void>;
   threadRef?: ScopedThreadRef;
   projectRef?: ScopedProjectRef;
   environmentId?: EnvironmentId;
@@ -436,6 +443,19 @@ export function PluginView(props: {
   const perform = useStableCallback(async (raw: unknown) => {
     if (!opened?.instanceId) throw new Error("Reopen this plugin view to use host actions.");
     const instanceId = opened.instanceId;
+    if (isNewThreadOperation(raw)) {
+      if (
+        props.pluginId !== "mission-control" ||
+        !opened.capabilities?.includes("missionControl") ||
+        !props.onNewThread
+      )
+        throw new Error("This view cannot open a new thread composer.");
+      await props.onNewThread(
+        raw.projectId ? { environmentId, projectId: raw.projectId } : null,
+        instanceId,
+      );
+      return { opened: true };
+    }
     if (isMissionControlDraftOperation(raw)) {
       if (props.pluginId !== "mission-control" || !opened.capabilities?.includes("missionControl"))
         throw new Error("This plugin cannot access Mission Control drafts.");
@@ -535,6 +555,8 @@ export function PluginView(props: {
       hostContext: () => ({
         theme: live().theme.appearance,
         "phoenix/visible": live().props.active !== false,
+        "phoenix/nativeThreadDialog": Boolean(live().props.onInspectThread),
+        "phoenix/nativeNewThreadDialog": Boolean(live().props.onNewThread),
         styles: { variables: mcpAppStyleVariables(live().theme.variables) },
         displayMode: "fullscreen",
         availableDisplayModes: ["fullscreen"],
