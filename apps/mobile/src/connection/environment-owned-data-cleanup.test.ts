@@ -21,6 +21,9 @@ vi.mock("../state/use-composer-drafts", () => ({
 vi.mock("../state/thread-composer-error", () => ({
   clearThreadComposerErrorsForEnvironment: harness.clearComposerErrors,
 }));
+vi.mock("../state/mission-control-drafts", () => ({
+  missionControlDrafts: { clearEnvironment: async () => {} },
+}));
 
 import * as EnvironmentOwnedDataCleanup from "./environment-owned-data-cleanup";
 

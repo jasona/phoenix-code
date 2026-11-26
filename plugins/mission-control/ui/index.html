@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="frame-src 'none'; child-src 'none'" />
+    <title>Mission Control</title>
+    <!-- styles -->
+  </head>
+  <body>
+    <div id="mc-app" class="mc-shell">
+      <aside id="mc-rail" class="mc-rail" aria-label="Mission Control navigation"></aside>
+
+      <main id="mc-workspace" class="mc-workspace">
+        <header class="mc-header">
+          <div class="mc-header-top">
+            <div class="mc-title-group">
+              <h1 class="mc-title">Mission Control</h1>
+              <p id="mc-subtitle" class="mc-subtitle">Loading workspaces…</p>
+            </div>
+
+            <nav
+              id="mc-view-tabs"
+              class="mc-segmented"
+              role="tablist"
+              aria-label="Mission Control views"
+            >
+              <button
+                type="button"
+                role="tab"
+                data-view="inbox"
+                aria-selected="true"
+                class="mc-seg-btn active"
+              >
+                Inbox
+              </button>
+              <button
+                type="button"
+                role="tab"
+                data-view="overview"
+                aria-selected="false"
+                class="mc-seg-btn"
+              >
+                Overview
+              </button>
+              <button
+                type="button"
+                role="tab"
+                data-view="board"
+                aria-selected="false"
+                class="mc-seg-btn"
+              >
+                Board
+              </button>
+              <button
+                type="button"
+                role="tab"
+                data-view="timeline"
+                aria-selected="false"
+                class="mc-seg-btn"
+              >
+                Timeline
+              </button>
+              <button
+                type="button"
+                role="tab"
+                data-view="graph"
+                aria-selected="false"
+                class="mc-seg-btn"
+              >
+                Graph
+              </button>
+              <button
+                type="button"
+                role="tab"
+                data-view="usage"
+                aria-selected="false"
+                class="mc-seg-btn"
+              >
+                Usage
+              </button>
+            </nav>
+
+            <div class="mc-header-actions">
+              <button type="button" id="mc-new-thread-btn" class="mc-btn-primary">
+                <span class="mc-btn-plus" aria-hidden="true">+</span>
+                <span>New Thread</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="mc-header-controls">
+            <div id="mc-filters" class="mc-filter-group" role="group" aria-label="Filter threads">
+              <button type="button" data-filter="all" class="mc-filter-pill active">All</button>
+              <button type="button" data-filter="attention" class="mc-filter-pill">
+                <span class="mc-dot tone-amber" aria-hidden="true"></span>
+                <span>Needs Attention</span>
+                <span id="mc-count-attention" class="mc-pill-count tone-amber">0</span>
+              </button>
+              <button type="button" data-filter="running" class="mc-filter-pill">
+                <span class="mc-dot tone-green" aria-hidden="true"></span>
+                <span>Running</span>
+                <span id="mc-count-running" class="mc-pill-count tone-green">0</span>
+              </button>
+            </div>
+
+            <div class="mc-search-wrap">
+              <svg
+                class="mc-icon mc-search-icon"
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+              >
+                <circle cx="7" cy="7" r="4.25"></circle>
+                <path d="m10.25 10.25 3.25 3.25"></path>
+              </svg>
+              <input
+                id="mc-search"
+                type="search"
+                class="mc-search-input"
+                placeholder="Search projects &amp; threads..."
+                aria-label="Search projects and threads"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                id="mc-cmdk-trigger"
+                class="mc-kbd"
+                title="Open Command Palette (Ctrl+K)"
+              >
+                Ctrl+K
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div id="mc-undo" class="mc-freshness hidden" role="status">
+          Inbox updated.
+          <button type="button" class="mc-btn-subtle" data-action="undo-triage">Undo</button>
+        </div>
+        <div id="mc-freshness" class="mc-freshness hidden" role="status"></div>
+        <section id="mc-view" class="mc-view" aria-live="polite"></section>
+      </main>
+
+      <aside id="mc-inspector" class="mc-inspector" aria-label="Thread inspector"></aside>
+    </div>
+
+    <div id="mc-backdrop" class="mc-backdrop hidden" aria-hidden="true"></div>
+    <aside
+      id="mc-plugins-drawer"
+      class="mc-drawer hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Plugins and Sidecars"
+    ></aside>
+    <div
+      id="mc-settings-popover"
+      class="mc-popover hidden"
+      role="dialog"
+      aria-label="Mission Control Settings"
+    ></div>
+    <div id="mc-modal-root" class="mc-modal-root hidden" role="dialog" aria-modal="true"></div>
+    <div id="mc-toast-root" class="mc-toast-root" aria-live="polite"></div>
+
+    <!-- scripts -->
+  </body>
+</html>

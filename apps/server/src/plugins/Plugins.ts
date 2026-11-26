@@ -27,6 +27,12 @@ import * as McpClient from "effect/ai/McpClient";
 import * as McpSchema from "effect/ai/McpSchema";
 import * as McpProtocol from "effect/ai/McpProtocol";
 import * as ChildProcess from "effect/process/ChildProcess";
+import {
+  bundledMissionControl,
+  missionControlDocument,
+  missionControlTool,
+  missionControlResult,
+} from "./BundledPlugins.ts";
 import * as PluginAuthoring from "./PluginAuthoring.ts";
 import * as PluginModelContext from "./PluginModelContext.ts";
 import * as PluginSidecars from "./PluginSidecars.ts";
@@ -86,8 +92,16 @@ const make = Effect.gen(function* () {
   };
   const failure = (cause: unknown) => new PluginError({ reason: "request-failed", cause });
   const readRegistry = Effect.fn("Plugins.readRegistry")(function* () {
-    if (!(yield* fs.exists(registryPath))) return [];
-    return yield* decodeRegistry(yield* fs.readFileString(registryPath));
+    const entries = (yield* fs.exists(registryPath))
+      ? yield* decodeRegistry(yield* fs.readFileString(registryPath))
+      : [];
+    const saved = entries.find((entry) => entry.manifest.id === bundledMissionControl.manifest.id);
+    return [
+      { ...bundledMissionControl, enabled: saved?.enabled ?? true },
+      ...entries
+        .filter((entry) => entry.manifest.id !== bundledMissionControl.manifest.id)
+        .map((entry) => ({ ...entry, bundled: false })),
+    ];
   }, Effect.mapError(failure));
   const save = Effect.fn("Plugins.save")(function* (entries: ReadonlyArray<PluginInstallation>) {
     yield* fs.makeDirectory(root, { recursive: true });
@@ -173,6 +187,11 @@ const make = Effect.gen(function* () {
     if (new Set(manifest.views.map((view) => view.id)).size !== manifest.views.length)
       return yield* new PluginError({ reason: "invalid-manifest" });
     const entries = yield* readRegistry();
+    if (
+      manifest.id === bundledMissionControl.manifest.id ||
+      manifest.capabilities?.includes("missionControl")
+    )
+      return yield* new PluginError({ reason: "permission-denied" });
     const entry = { manifest, directory, enabled: false };
     revokeViews(manifest.id);
     yield* stop(manifest.id);
@@ -196,7 +215,10 @@ const make = Effect.gen(function* () {
         return null;
       }
       if (input.action === "configure") {
-        if (input.scope && !entry.grants?.projectIds.includes(input.scope.projectId))
+        if (
+          input.scope &&
+          (!input.scope.projectId || !entry.grants?.projectIds.includes(input.scope.projectId))
+        )
           return yield* new PluginError({ reason: "permission-denied" });
         for (const [key, value] of Object.entries(input.configuration ?? {})) {
           const field = entry.manifest.configuration?.[key];
@@ -219,6 +241,7 @@ const make = Effect.gen(function* () {
         return null;
       }
       if (input.action === "grant") {
+        if (entry.bundled) return yield* new PluginError({ reason: "permission-denied" });
         if (
           input.grants.capabilities.some(
             (capability) => !entry.manifest.capabilities?.includes(capability),
@@ -239,9 +262,13 @@ const make = Effect.gen(function* () {
         yield* stop(input.pluginId);
         yield* sidecars.stop(input.pluginId);
         yield* save(
-          input.action === "remove"
+          input.action === "remove" && !entry.bundled
             ? entries.filter((item) => item !== entry)
-            : entries.map((item) => (item === entry ? { ...entry, enabled: input.enabled } : item)),
+            : entries.map((item) =>
+                item === entry
+                  ? { ...entry, enabled: input.action === "enable" && input.enabled }
+                  : item,
+              ),
         );
         if (input.action === "enable" && input.enabled)
           yield* sidecars.start({ ...entry, enabled: true });
@@ -250,7 +277,9 @@ const make = Effect.gen(function* () {
       if (!entry.enabled) return yield* new PluginError({ reason: "disabled" });
       if (input.action === "restart" || input.action === "reload") {
         const manifest =
-          input.action === "reload" ? yield* authoring.validate(entry.directory) : entry.manifest;
+          input.action === "reload" && !entry.bundled
+            ? yield* authoring.validate(entry.directory)
+            : entry.manifest;
         if (manifest.id !== entry.manifest.id)
           return yield* new PluginError({ reason: "invalid-manifest" });
         const updated = {
@@ -286,6 +315,42 @@ const make = Effect.gen(function* () {
         };
         yield* PubSub.publish(launches, launch);
         return launch;
+      }
+      if (entry.bundled) {
+        if (input.action === "resource") {
+          if (input.uri !== missionControlTool._meta.ui.resourceUri)
+            return yield* new PluginError({ reason: "not-found" });
+          return {
+            contents: [
+              {
+                uri: input.uri,
+                mimeType: "text/html;profile=mcp-app",
+                text: missionControlDocument.html,
+              },
+            ],
+          };
+        }
+        if (input.action === "call") {
+          if (input.name !== missionControlTool.name)
+            return yield* new PluginError({ reason: "not-found" });
+          return missionControlResult;
+        }
+        if (input.viewId !== "dashboard") return yield* new PluginError({ reason: "not-found" });
+        const instanceId = `${input.pluginId}:${yield* randomUuidV4}`;
+        if (views.size >= 256) {
+          const oldest = views.keys().next().value!;
+          views.delete(oldest);
+          modelContext.release(oldest);
+        }
+        views.set(instanceId, { pluginId: input.pluginId, scope: {} });
+        return {
+          instanceId,
+          capabilities: ["missionControl"],
+          html: missionControlDocument.html,
+          resourceUri: missionControlTool._meta.ui.resourceUri,
+          tool: missionControlTool,
+          result: missionControlResult,
+        };
       }
       const client = yield* connect(entry);
       if (input.action === "resource")
@@ -342,7 +407,7 @@ const make = Effect.gen(function* () {
         ...(instanceId ? { instanceId } : {}),
         capabilities:
           input.action === "open" &&
-          input.scope &&
+          input.scope?.projectId &&
           entry.grants?.projectIds.includes(input.scope.projectId)
             ? entry.grants.capabilities
             : [],
@@ -364,9 +429,14 @@ const make = Effect.gen(function* () {
     const view = views.get(input.instanceId);
     if (!view || view.pluginId !== input.pluginId)
       return yield* new PluginError({ reason: "stale-view" });
+    if (capability === "missionControl" && !entry.bundled)
+      return yield* new PluginError({ reason: "permission-denied" });
+    if (entry.bundled && (capability === "missionControl" || capability === "context"))
+      return yield* use(view.scope);
     if (
       capability !== undefined &&
       (!entry.grants?.capabilities.includes(capability) ||
+        !view.scope.projectId ||
         !entry.grants.projectIds.includes(view.scope.projectId))
     )
       return yield* new PluginError({ reason: "permission-denied" });
@@ -383,6 +453,7 @@ const make = Effect.gen(function* () {
         !entry.enabled ||
         !scope ||
         !entry.grants?.capabilities.includes("context") ||
+        !scope.projectId ||
         !entry.grants.projectIds.includes(scope.projectId)
       )
         continue;

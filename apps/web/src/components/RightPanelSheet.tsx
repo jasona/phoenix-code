@@ -1,6 +1,7 @@
 import { T } from "gt-react";
-import { type ReactNode } from "react";
+import { use, type ReactNode } from "react";
 
+import { HiddenThreadContext } from "./chat/backgroundThread";
 import { Sheet, SheetHeader, SheetPopup, SheetTitle } from "./ui/sheet";
 
 export function RightPanelSheet(props: {
@@ -9,9 +10,10 @@ export function RightPanelSheet(props: {
   open: boolean;
   onClose: () => void;
 }) {
+  const hidden = use(HiddenThreadContext);
   return (
     <Sheet
-      open={props.open}
+      open={props.open && !hidden}
       onOpenChange={(open, eventDetails) => {
         if (open) return;
         // Base UI's dismiss handler fires on held Esc repeats after a nested popup closes.

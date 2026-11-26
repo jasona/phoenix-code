@@ -19,6 +19,7 @@ import * as Schema from "effect/Schema";
 import * as Path from "effect/Path";
 import { isProviderSignOutPrompt } from "../orchestration-v2/CommandPolicy.ts";
 import * as PluginModelContext from "./PluginModelContext.ts";
+import * as MissionControl from "./MissionControl.ts";
 import * as Plugins from "./Plugins.ts";
 import * as ThreadManagement from "../orchestration-v2/ThreadManagementService.ts";
 import * as ProjectStore from "../orchestration-v2/ProjectStore.ts";
@@ -40,6 +41,7 @@ const encodeItems = Schema.encodeEffect(
 const isPluginError = Schema.is(PluginError);
 
 const make = Effect.gen(function* () {
+  const missionControl = yield* MissionControl.MissionControl;
   const modelContext = yield* PluginModelContext.PluginModelContext;
   const plugins = yield* Plugins.Plugins;
   const engine = yield* Orchestrator.OrchestratorV2;
@@ -55,6 +57,13 @@ const make = Effect.gen(function* () {
         input,
         capability,
         Effect.fn("PluginHost.perform")(function* (scope) {
+          if (operation.type === "missionControl")
+            return yield* missionControl.request(operation.request);
+          if (!scope.projectId) {
+            if (operation.type === "context" && input.pluginId === "mission-control")
+              return { scope: "environment" };
+            return yield* new PluginError({ reason: "stale-view" });
+          }
           const project = Option.getOrUndefined(yield* projects.get(scope.projectId));
           if (!project) return yield* new PluginError({ reason: "stale-view" });
           const thread = scope.threadId

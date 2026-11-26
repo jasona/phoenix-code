@@ -1,10 +1,20 @@
-import { ArrowLeftIcon, ArrowRightIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ChartNoAxesColumnIcon,
+  LayoutDashboardIcon,
+  SettingsIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { T, useGT } from "gt-react";
 import { memo } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 
 import { useAtomValue } from "@effect/atom-react";
+import { useMissionControlStore } from "../../missionControlStore";
+import { useOpenMissionControl } from "../../hooks/useOpenMissionControl";
+import { usePrimaryEnvironmentId } from "../../state/environments";
+import { useServerConfigs } from "../../state/entities";
 import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
 import { shortcutLabelForCommand } from "../../keybindings";
 import {
@@ -204,17 +214,25 @@ function SidebarUtilityItem({
   icon,
   label,
   onClick,
+  pressed,
 }: {
   icon: ReactNode;
   label: string;
   onClick: () => void;
+  pressed?: boolean;
 }) {
   return (
     <SidebarMenuItem className="shrink-0">
       <Tooltip>
         <TooltipTrigger
           render={
-            <SidebarMenuButton aria-label={label} onClick={onClick} size="icon">
+            <SidebarMenuButton
+              aria-label={label}
+              aria-pressed={pressed}
+              isActive={pressed ?? false}
+              onClick={onClick}
+              size="icon"
+            >
               {icon}
             </SidebarMenuButton>
           }
@@ -235,6 +253,11 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   });
   const pullRequestsSupported = usePullRequestsSupported();
   const issuesSupported = useIssuesSupported();
+  const primaryEnvironmentId = usePrimaryEnvironmentId();
+  const pluginViewsSupported =
+    useServerConfigs().get(primaryEnvironmentId!)?.environment.capabilities.pluginViews === true;
+  const missionControlOpen = useMissionControlStore((state) => state.environmentId !== null);
+  const openMissionControl = useOpenMissionControl();
   const closeMobileSidebar = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -307,6 +330,19 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
           />
         </>
       )}
+      {pluginViewsSupported && primaryEnvironmentId ? (
+        <SidebarUtilityItem
+          icon={<LayoutDashboardIcon />}
+          // oxlint-disable-next-line t3code/no-untranslated-copy -- Mission Control is the bundled plugin’s product name.
+          label="Mission Control"
+          pressed={missionControlOpen}
+          onClick={() => {
+            closeMobileSidebar();
+            if (missionControlOpen) useMissionControlStore.getState().close();
+            else void openMissionControl(primaryEnvironmentId);
+          }}
+        />
+      ) : null}
       <SidebarThreadUndoNotice />
       <SidebarUpdatePill />
     </SidebarMenu>

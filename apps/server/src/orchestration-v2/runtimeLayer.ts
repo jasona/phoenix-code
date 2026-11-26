@@ -9,6 +9,8 @@ import * as OrchestrationCommandReceipts from "../persistence/OrchestrationComma
 import * as OrchestrationEventStore from "../persistence/OrchestrationEventStore.ts";
 import * as McpAppModelContext from "../mcpApps/McpAppModelContext.ts";
 import * as PreviewAgentActivity from "../preview/PreviewAgentActivity.ts";
+import * as MissionControl from "../plugins/MissionControl.ts";
+import * as MissionControlReviews from "../plugins/MissionControlReviews.ts";
 import * as PluginHost from "../plugins/PluginHost.ts";
 import * as Plugins from "../plugins/Plugins.ts";
 import * as McpAppRequests from "../mcpApps/McpAppRequests.ts";
@@ -425,16 +427,6 @@ export const layer = Layer.mergeAll(
       Layer.mergeAll(Plugins.layer, layerOrchestratorProvided, layerThreadManagementProvided),
     ),
   ),
-  PluginHost.layer.pipe(
-    Layer.provide(
-      Layer.mergeAll(
-        Plugins.layer,
-        layerThreadManagementProvided,
-        ProjectStore.layer,
-        layerOrchestratorProvided,
-      ),
-    ),
-  ),
   layerMcpAppRequestsProvided,
   layerMcpSignInProvided,
   layerThreadManagementProvided,
@@ -447,6 +439,28 @@ export const layer = Layer.mergeAll(
 );
 
 export const layerProduction = Layer.mergeAll(
+  PluginHost.layer.pipe(
+    Layer.provide(
+      MissionControl.layer.pipe(
+        Layer.provide(MissionControlReviews.layer),
+        Layer.provide(
+          Layer.mergeAll(
+            layerThreadManagementProvided,
+            ProjectStore.layer,
+            layerScheduledTaskProvided,
+          ).pipe(Layer.provideMerge(GitVcsDriver.layer)),
+        ),
+      ),
+    ),
+    Layer.provide(
+      Layer.mergeAll(
+        Plugins.layer,
+        layerThreadManagementProvided,
+        ProjectStore.layer,
+        layerOrchestratorProvided,
+      ),
+    ),
+  ),
   WorktreeBranchSync.layer.pipe(
     Layer.provide(Layer.merge(layerThreadManagementProvided, ProjectionStore.layer)),
   ),

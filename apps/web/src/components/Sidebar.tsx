@@ -1,3 +1,4 @@
+import { useMissionControlStore } from "../missionControlStore";
 import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import { msg, T, useGT, useMessages } from "gt-react";
 import { m } from "../i18n/messages";
@@ -1518,6 +1519,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   })();
 
   const navigateToThread = (threadRef: ScopedThreadRef) => {
+    useMissionControlStore.getState().showWorkspace();
     if (useThreadSelectionStore.getState().selectedThreadKeys.size > 0) {
       clearSelection();
     }
@@ -3791,7 +3793,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                                 count={settledCount}
                                 description={
                                   settledShelfExpanded && settledCount > 0
-                                    ? "Settled by you or when idle."
+                                    ? gt("Settled by you or when idle.")
                                     : undefined
                                 }
                                 dragging={from !== null}

@@ -2,6 +2,7 @@ import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, useIsFocused, type StaticScreenProps } from "@react-navigation/native";
 import { EnvironmentId, ThreadId, PluginHostInput, type PluginLaunch } from "@t3tools/contracts";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { isMissionControlDraftOperation } from "@t3tools/client-runtime/plugins/mission-control-drafts";
 import {
   makeMcpAppHost,
   mcpAppStyleVariables,
@@ -27,7 +28,9 @@ import { uuidv4 } from "../../lib/uuid";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { getComposerDraftSnapshot, setComposerDraftText } from "../../state/use-composer-drafts";
 import { scopedThreadKey } from "../../lib/scopedEntities";
+import { useOpenLinkedThread } from "./useOpenLinkedThread";
 import { outerDocument } from "./mcpAppOuterDocument";
+import { missionControlDrafts } from "../../state/mission-control-drafts";
 
 const Opened = Schema.Struct({
   html: Schema.String,
@@ -40,6 +43,7 @@ const Opened = Schema.Struct({
 
 const isOpened = Schema.is(Opened);
 const decodeOperation = Schema.decodeUnknownSync(PluginHostInput.fields.operation);
+const isThreadResult = Schema.is(Schema.Struct({ threadId: ThreadId }));
 const isFileResult = Schema.is(Schema.Struct({ relativePath: Schema.String }));
 const isEnvelope = Schema.is(Schema.Struct({ secret: Schema.String, message: Schema.Unknown }));
 const isNavigated = Schema.is(Schema.Struct({ t3: Schema.Literal("navigated") }));
@@ -156,6 +160,7 @@ function PluginDocument({
 }) {
   const gt = useGT();
   const navigation = useNavigation();
+  const openThread = useOpenLinkedThread();
   const request = useAtomCommand(mcpAppEnvironment.pluginsRequest, { reportFailure: false });
   const hostRequest = useAtomCommand(mcpAppEnvironment.pluginsHost, { reportFailure: false });
   const context = useEnvironmentQuery(
@@ -189,6 +194,14 @@ function PluginDocument({
       return result.value;
     };
     const perform = async (raw: unknown) => {
+      if (isMissionControlDraftOperation(raw)) {
+        if (
+          opened.pluginId !== "mission-control" ||
+          !opened.data.capabilities.includes("missionControl")
+        )
+          throw new Error("This plugin cannot access Mission Control drafts.");
+        return missionControlDrafts.request(environmentId, raw);
+      }
       const operation = decodeOperation(raw);
       if (operation.type === "message" || operation.type === "createThread") {
         const approved = await new Promise<boolean>((resolve) =>
@@ -204,12 +217,27 @@ function PluginDocument({
         );
         if (!approved) throw new Error("Declined by the user.");
       }
-      const result = await live().hostRequest({
-        environmentId,
-        input: { pluginId: opened.pluginId, instanceId: opened.data.instanceId, operation },
-      });
-      if (result._tag !== "Success")
-        throw new Error("Plugin permission denied. Check grants and reopen the view.");
+      const send = async () => {
+        const result = await live().hostRequest({
+          environmentId,
+          input: { pluginId: opened.pluginId, instanceId: opened.data.instanceId, operation },
+        });
+        if (result._tag !== "Success")
+          throw new Error("Plugin permission denied. Check grants and reopen the view.");
+        return result;
+      };
+      const result =
+        opened.pluginId === "mission-control" &&
+        opened.data.capabilities.includes("missionControl") &&
+        operation.type === "missionControl" &&
+        operation.request.action === "reply"
+          ? await missionControlDrafts.submit(
+              environmentId,
+              operation.request.threadId,
+              operation.request.text,
+              send,
+            )
+          : await send();
       if (operation.type === "attach") {
         const key = scopedThreadKey(environmentId, thread.id);
         setComposerDraftText(
@@ -224,6 +252,12 @@ function PluginDocument({
           path: result.value.relativePath.split("/"),
         });
       }
+      if (
+        operation.type === "missionControl" &&
+        operation.request.action === "openThread" &&
+        isThreadResult(result.value)
+      )
+        openThread({ environmentId, threadId: result.value.threadId });
       return result.value;
     };
     const refuse = async () => {

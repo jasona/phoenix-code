@@ -3102,8 +3102,14 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   );
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- registers this composer's context insertion handler in the draft store for the current target
   useEffect(() => {
+    if (hiddenThread) return;
     return setContextInsertionHandler(composerDraftTarget, insertContextReferencesAtCaretStable);
-  }, [composerDraftTarget, insertContextReferencesAtCaretStable, setContextInsertionHandler]);
+  }, [
+    composerDraftTarget,
+    hiddenThread,
+    insertContextReferencesAtCaretStable,
+    setContextInsertionHandler,
+  ]);
 
   // Capture drops before the editor; mention handlers own native propagation and moves.
   const composerMentionDragHandlers = makeComposerMentionDragHandlers({

@@ -1,10 +1,11 @@
 import { ModelSelection } from "./modelSelection.ts";
 import * as Schema from "effect/Schema";
-import { ProjectId, ThreadId } from "./baseSchemas.ts";
+import { IsoDateTime, ProjectId, RunId, RuntimeRequestId, ThreadId } from "./baseSchemas.ts";
 import { TrimmedNonEmptyString } from "./baseSchemas.ts";
 
 export const PluginId = TrimmedNonEmptyString.check(Schema.isPattern(/^[a-z0-9][a-z0-9.-]{0,63}$/));
 export const PluginCapability = Schema.Literals([
+  "missionControl",
   "context",
   "transcript",
   "files",
@@ -15,7 +16,7 @@ export const PluginCapability = Schema.Literals([
 ]);
 export type PluginCapability = typeof PluginCapability.Type;
 export const PluginScope = Schema.Struct({
-  projectId: ProjectId,
+  projectId: Schema.optional(ProjectId),
   threadId: Schema.optional(ThreadId),
 });
 export type PluginScope = typeof PluginScope.Type;
@@ -65,7 +66,7 @@ export const PluginManifest = Schema.Struct({
       id: PluginId,
       title: TrimmedNonEmptyString,
       tool: TrimmedNonEmptyString,
-      scope: Schema.optional(Schema.Literals(["thread", "project"])),
+      scope: Schema.optional(Schema.Literals(["thread", "project", "environment"])),
     }),
   ),
 });
@@ -74,6 +75,7 @@ export const PluginInstallation = Schema.Struct({
   manifest: PluginManifest,
   directory: TrimmedNonEmptyString,
   enabled: Schema.Boolean,
+  bundled: Schema.optional(Schema.Boolean),
   backgroundScope: Schema.optional(PluginScope),
   configuration: Schema.optional(PluginConfiguration),
   runtime: Schema.optional(PluginRuntime),
@@ -143,9 +145,48 @@ export const PluginViewInput = Schema.Struct({
   pluginId: PluginId,
   instanceId: TrimmedNonEmptyString,
 });
+export const MissionControlRequest = Schema.Union([
+  Schema.Struct({
+    action: Schema.Literal("snapshot"),
+    etag: Schema.optional(Schema.String.check(Schema.isMaxLength(64))),
+  }),
+  Schema.Struct({ action: Schema.Literal("usage") }),
+  Schema.Struct({ action: Schema.Literals(["detail", "seen", "openThread"]), threadId: ThreadId }),
+  Schema.Struct({
+    action: Schema.Literal("reply"),
+    threadId: ThreadId,
+    text: Schema.String.check(Schema.isMaxLength(16_384)),
+    mode: Schema.optional(Schema.Literals(["queue", "steer", "auto"])),
+    expectedActiveRunId: Schema.optional(Schema.NullOr(RunId)),
+  }),
+  Schema.Struct({
+    action: Schema.Literal("control"),
+    threadId: ThreadId,
+    command: Schema.Literals(["stop", "retry", "resume"]),
+    expectedRunId: RunId,
+  }),
+  Schema.Struct({
+    action: Schema.Literal("triage"),
+    threadId: ThreadId,
+    disposition: Schema.Literals(["accept", "reopen", "snooze", "unsnooze"]),
+    expectedLatestRunId: Schema.NullOr(RunId),
+    expectedRequestId: Schema.optional(Schema.NullOr(RuntimeRequestId)),
+    snoozedUntil: Schema.optional(IsoDateTime),
+  }),
+  Schema.Struct({
+    action: Schema.Literal("create"),
+    projectId: ProjectId,
+    title: Schema.String.check(Schema.isMaxLength(200)),
+    text: Schema.String.check(Schema.isMaxLength(16_384)),
+    modelSelection: Schema.optional(ModelSelection),
+  }),
+]);
+export type MissionControlRequest = typeof MissionControlRequest.Type;
+
 export const PluginHostInput = Schema.Struct({
   ...PluginViewInput.fields,
   operation: Schema.Union([
+    Schema.Struct({ type: Schema.Literal("missionControl"), request: MissionControlRequest }),
     Schema.Struct({ type: Schema.Literal("context") }),
     Schema.Struct({ type: Schema.Literal("transcript"), cursor: Schema.optional(Schema.String) }),
     Schema.Struct({

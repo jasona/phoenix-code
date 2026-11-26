@@ -1,7 +1,10 @@
 import { scopedThreadKey } from "@t3tools/client-runtime/environment";
+import { isMissionControlDraftOperation } from "@t3tools/client-runtime/plugins/mission-control-drafts";
+import { missionControlDrafts } from "~/state/mission-control-drafts";
+import { useOpenMissionControl } from "../../hooks/useOpenMissionControl";
 import { PluginConfiguration } from "./PluginConfiguration";
 import { useAtomValue } from "@effect/atom-react";
-import { PluginDiagnostics, PluginHostInput } from "@t3tools/contracts";
+import { PluginDiagnostics, PluginHostInput, ThreadId } from "@t3tools/contracts";
 import type {
   EnvironmentId,
   PluginRequestInput,
@@ -15,6 +18,7 @@ import {
   type McpAppHost,
 } from "@t3tools/client-runtime/mcp-apps";
 import { injectMcpAppCsp, injectMcpAppDocumentBootstrap } from "@t3tools/shared/mcpApp";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useGT } from "gt-react";
 import * as Schema from "effect/Schema";
@@ -53,6 +57,7 @@ const isFilePage = Schema.is(
     nextOffset: Schema.NullOr(Schema.Number),
   }),
 );
+const isThreadResult = Schema.is(Schema.Struct({ threadId: ThreadId }));
 const isFileResult = Schema.is(Schema.Struct({ relativePath: Schema.String }));
 const isHostContext = Schema.is(
   Schema.Struct({
@@ -70,6 +75,8 @@ export function PluginPanel({
   threadRef?: ScopedThreadRef;
 }) {
   const gt = useGT();
+  const navigate = useNavigate();
+  const openMissionControl = useOpenMissionControl();
   const supported =
     useServerConfigs().get(environmentId)?.environment.capabilities.pluginViews === true;
   const listing = useEnvironmentQuery(
@@ -194,7 +201,7 @@ export function PluginPanel({
                 </Button>
                 <Button
                   variant="ghost"
-                  disabled={busy || !allowed || !supported}
+                  disabled={entry.bundled || busy || !allowed || !supported}
                   onClick={() => change({ action: "remove", pluginId: entry.manifest.id })}
                 >
                   {gt("Uninstall")}
@@ -218,7 +225,7 @@ export function PluginPanel({
               disabled={busy || !allowed}
               onSave={change}
             />
-            {(entry.manifest.capabilities?.length ?? 0) > 0 && (
+            {!entry.bundled && (entry.manifest.capabilities?.length ?? 0) > 0 && (
               <details className="text-sm">
                 <summary className="cursor-pointer">{gt("Project permissions")}</summary>
                 <p className="my-2 text-xs text-muted-foreground">
@@ -324,14 +331,21 @@ export function PluginPanel({
                   variant="outline"
                   disabled={!entry.enabled || !allowed || !supported}
                   onClick={() => {
-                    if (threadRef && view.scope !== "project")
+                    if (entry.manifest.id === "mission-control" && view.id === "dashboard")
+                      void openMissionControl(environmentId);
+                    else if (threadRef && (view.scope ?? "thread") === "thread")
                       useRightPanelStore
                         .getState()
                         .openPlugin(threadRef, entry.manifest.id, view.id, view.title);
                     else
-                      window.location.assign(
-                        `/plugins?environmentId=${encodeURIComponent(environmentId)}&pluginId=${encodeURIComponent(entry.manifest.id)}&viewId=${encodeURIComponent(view.id)}`,
-                      );
+                      void navigate({
+                        to: "/plugins",
+                        search: {
+                          environmentId,
+                          pluginId: entry.manifest.id,
+                          viewId: view.id,
+                        },
+                      });
                   }}
                 >
                   {view.title}
@@ -346,8 +360,12 @@ export function PluginPanel({
 }
 
 export function PluginView(props: {
+  active?: boolean;
+  onOpenThread?: () => void;
+  onInspectThread?: (threadRef: ScopedThreadRef, instanceId: string) => void;
   threadRef?: ScopedThreadRef;
   projectRef?: ScopedProjectRef;
+  environmentId?: EnvironmentId;
   pluginId: string;
   viewId: string;
 }) {
@@ -355,7 +373,9 @@ export function PluginView(props: {
   const request = useAtomCommand(mcpAppEnvironment.pluginsRequest, { reportFailure: false });
   const hostRequest = useAtomCommand(mcpAppEnvironment.pluginsHost, { reportFailure: false });
   const thread = useQuietThreadShell(props.threadRef ?? null);
-  const environmentId = props.threadRef?.environmentId ?? props.projectRef!.environmentId;
+  const navigate = useNavigate();
+  const environmentId =
+    props.environmentId ?? props.threadRef?.environmentId ?? props.projectRef!.environmentId;
   const projectId = thread?.projectId ?? props.projectRef?.projectId;
   const view = useEnvironmentQuery(
     pluginViewAtom(
@@ -394,7 +414,7 @@ export function PluginView(props: {
   useEffect(() => {
     hostRef.current?.updateHostContext();
     // oxlint-disable-next-line react/exhaustive-effect-dependencies -- The bridge reads these values through its stable live callback.
-  }, [theme, thread, context.data, surfaces]);
+  }, [theme, thread, context.data, surfaces, props.active]);
   const call = useStableCallback(async (input: PluginRequestInput) => {
     const result = await request({ environmentId: environmentId, input });
     if (result._tag !== "Success")
@@ -414,8 +434,14 @@ export function PluginView(props: {
     if (result._tag === "Success" && isFilePage(result.value)) setFilePreview(result.value);
   });
   const perform = useStableCallback(async (raw: unknown) => {
-    const operation = decodeOperation(raw);
     if (!opened?.instanceId) throw new Error("Reopen this plugin view to use host actions.");
+    const instanceId = opened.instanceId;
+    if (isMissionControlDraftOperation(raw)) {
+      if (props.pluginId !== "mission-control" || !opened.capabilities?.includes("missionControl"))
+        throw new Error("This plugin cannot access Mission Control drafts.");
+      return missionControlDrafts.request(environmentId, raw);
+    }
+    const operation = decodeOperation(raw);
     if (operation.type === "message" || operation.type === "createThread") {
       const approved = await requestConfirmDialog(
         operation.type === "message"
@@ -424,14 +450,29 @@ export function PluginView(props: {
       );
       if (!approved) throw new Error("Declined by the user.");
     }
-    const result = await hostRequest({
-      environmentId: environmentId,
-      input: { pluginId: props.pluginId, instanceId: opened.instanceId, operation },
-    });
-    if (result._tag !== "Success")
-      throw new Error(
-        gt("The plugin action was refused. Check its permissions and reopen the view."),
-      );
+    const send = async () => {
+      const result = await hostRequest({
+        environmentId: environmentId,
+        input: { pluginId: props.pluginId, instanceId, operation },
+      });
+      if (result._tag !== "Success")
+        throw new Error(
+          gt("The plugin action was refused. Check its permissions and reopen the view."),
+        );
+      return result;
+    };
+    const result =
+      props.pluginId === "mission-control" &&
+      opened.capabilities?.includes("missionControl") &&
+      operation.type === "missionControl" &&
+      operation.request.action === "reply"
+        ? await missionControlDrafts.submit(
+            environmentId,
+            operation.request.threadId,
+            operation.request.text,
+            send,
+          )
+        : await send();
     if (operation.type === "attach" && props.threadRef) {
       const drafts = useComposerDraftStore.getState();
       const current = drafts.getComposerDraft(props.threadRef)?.prompt ?? "";
@@ -441,6 +482,24 @@ export function PluginView(props: {
       useRightPanelStore.getState().openFile(props.threadRef, result.value.relativePath);
     if (operation.type === "openFile" && !props.threadRef && isFileResult(result.value))
       await readFile(result.value.relativePath);
+    if (
+      operation.type === "missionControl" &&
+      operation.request.action === "openThread" &&
+      isThreadResult(result.value)
+    ) {
+      if (props.onInspectThread) {
+        props.onInspectThread(
+          { environmentId, threadId: result.value.threadId },
+          opened.instanceId,
+        );
+        return result.value;
+      }
+      props.onOpenThread?.();
+      await navigate({
+        to: "/$environmentId/$threadId",
+        params: { environmentId, threadId: result.value.threadId },
+      });
+    }
     return result.value;
   });
   const live = useStableCallback(() => ({
@@ -475,6 +534,7 @@ export function PluginView(props: {
       phoenixRequest: (operation) => live().perform(operation),
       hostContext: () => ({
         theme: live().theme.appearance,
+        "phoenix/visible": live().props.active !== false,
         styles: { variables: mcpAppStyleVariables(live().theme.variables) },
         displayMode: "fullscreen",
         availableDisplayModes: ["fullscreen"],
@@ -557,9 +617,10 @@ export function PluginView(props: {
           onClick={() => {
             if (props.threadRef) useRightPanelStore.getState().open(props.threadRef, "plugins");
             else
-              window.location.assign(
-                `/settings/plugins?machine=${encodeURIComponent(environmentId)}`,
-              );
+              void navigate({
+                to: "/settings/plugins",
+                search: { machine: environmentId },
+              });
           }}
         >
           {gt("View logs")}

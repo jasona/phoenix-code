@@ -6,6 +6,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
 import * as Plugins from "./Plugins.ts";
+import * as MissionControl from "./MissionControl.ts";
 import * as PluginHost from "./PluginHost.ts";
 import * as ProjectStore from "../orchestration-v2/ProjectStore.ts";
 import * as Threads from "../orchestration-v2/ThreadManagementService.ts";
@@ -88,6 +89,7 @@ it.live(
       }).pipe(
         Effect.provide(
           PluginHost.layer.pipe(
+            Layer.provide(Layer.mock(MissionControl.MissionControl)({})),
             Layer.provide(
               Layer.mergeAll(
                 Layer.mock(Plugins.Plugins)({

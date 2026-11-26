@@ -9,6 +9,7 @@ import { clearThreadComposerErrorsForEnvironment } from "../state/thread-compose
 import { clearThreadOutboxEnvironment } from "../state/thread-outbox-removal";
 import { clearComposerDraftsEnvironment } from "../state/use-composer-drafts";
 import { mobileThreadTriageOutboxStore } from "../state/thread-triage-outbox-storage";
+import { missionControlDrafts } from "../state/mission-control-drafts";
 
 class EnvironmentOwnedDataClearError extends Schema.TaggedError<EnvironmentOwnedDataClearError>()(
   "EnvironmentOwnedDataClearError",
@@ -21,7 +22,7 @@ export const layer = Layer.succeed(
     clear: Effect.fn("Persistence.EnvironmentOwnedDataCleanup.clear")(function (environmentId) {
       // Each clear settles on its own: a failure must not interrupt a clear that is still running.
       const settle = (
-        operation: "outbox" | "drafts",
+        operation: "outbox" | "drafts" | "mission-control-drafts",
         clear: (environmentId: EnvironmentId) => Promise<void>,
       ) =>
         Effect.tryPromise({
@@ -40,6 +41,7 @@ export const layer = Layer.succeed(
         [
           settle("outbox", clearThreadOutboxEnvironment),
           settle("drafts", clearComposerDraftsEnvironment),
+          settle("mission-control-drafts", missionControlDrafts.clearEnvironment),
           Effect.sync(() => clearThreadComposerErrorsForEnvironment(environmentId)),
           Effect.ignore(mobileThreadTriageOutboxStore.clearEnvironment(environmentId)),
         ],
