@@ -36,6 +36,19 @@ export class MissionControl extends Context.Service<
   }
 >()("t3/plugins/MissionControl") {}
 
+function canDismissThread(thread: OrchestrationV2ThreadShell) {
+  return (
+    (thread.status === "interrupted" || thread.status === "cancelled") &&
+    thread.latestRunId !== null &&
+    thread.activeRunId === null &&
+    thread.pendingRuntimeRequest === null &&
+    !thread.hasActionableProposedPlan &&
+    !thread.blockedOnThreadWait &&
+    (thread.pendingBackgroundTasks?.length ?? 0) === 0 &&
+    (thread.pendingGuestMessageCount ?? 0) === 0
+  );
+}
+
 function summarize(
   thread: OrchestrationV2ThreadShell,
   children: number,
@@ -49,6 +62,14 @@ function summarize(
   const waitingForAgent =
     thread.blockedOnThreadWait === true || (thread.pendingBackgroundTasks?.length ?? 0) > 0;
   const review = reviews.get(thread.id);
+  const canDismiss = canDismissThread(thread);
+  const dismissed =
+    canDismiss &&
+    thread.settledOverride === "settled" &&
+    thread.settledAt != null &&
+    (!thread.latestRunCompletedAt ||
+      DateTime.toEpochMillis(thread.settledAt) >=
+        DateTime.toEpochMillis(thread.latestRunCompletedAt));
   const accepted =
     !running &&
     !pending &&
@@ -102,31 +123,33 @@ function summarize(
     (thread.lastVisitedAt == null ||
       DateTime.toEpochMillis(thread.latestRunCompletedAt) >
         DateTime.toEpochMillis(thread.lastVisitedAt));
-  const needsAttention = attentionCategory !== null && !accepted && !snoozed;
+  const needsAttention = attentionCategory !== null && !accepted && !dismissed && !snoozed;
   const statusLabel =
     pending || thread.hasActionableProposedPlan
       ? "Waiting for you"
       : accepted
         ? "Accepted"
-        : thread.status === "preparing"
-          ? "Preparing"
-          : thread.status === "queued"
-            ? "Queued"
-            : thread.latestRunStopRequested && running
-              ? "Stopping"
-              : waitingForAgent
-                ? "Waiting for agent"
-                : running
-                  ? "Working"
-                  : failed
-                    ? "Failed"
-                    : stopped
-                      ? "Stopped"
-                      : attentionCategory === "review"
-                        ? "Review ready"
-                        : "Idle";
+        : dismissed
+          ? "Dismissed"
+          : thread.status === "preparing"
+            ? "Preparing"
+            : thread.status === "queued"
+              ? "Queued"
+              : thread.latestRunStopRequested && running
+                ? "Stopping"
+                : waitingForAgent
+                  ? "Waiting for agent"
+                  : running
+                    ? "Working"
+                    : failed
+                      ? "Failed"
+                      : stopped
+                        ? "Stopped"
+                        : attentionCategory === "review"
+                          ? "Review ready"
+                          : "Idle";
   const tone =
-    accepted || snoozed
+    accepted || dismissed || snoozed
       ? "gray"
       : pending
         ? "amber"
@@ -160,6 +183,8 @@ function summarize(
     activeRunId: thread.activeRunId,
     pendingRequestId: pending?.id ?? null,
     accepted,
+    canDismiss,
+    dismissed,
     acceptedAt: accepted ? (review?.acceptedAt ?? null) : null,
     snoozed,
     snoozedUntil: thread.snoozedUntil ? DateTime.formatIso(thread.snoozedUntil) : null,
@@ -452,21 +477,25 @@ const make = Effect.gen(function* () {
             activeRunId: t.activeRunId,
             pendingRequestId: t.pendingRequestId,
             accepted: t.accepted,
+            dismissed: t.dismissed,
             acceptedAt: t.acceptedAt,
             snoozed: t.snoozed,
             snoozedUntil: t.snoozedUntil,
-            actions: t.accepted
-              ? ["review", "reopen"]
-              : t.snoozed
-                ? ["review", "unsnooze"]
-                : t.attentionCategory === "review"
-                  ? ["review", "accept", "snooze"]
-                  : all.find((source) => source.id === t.id)?.pendingRuntimeRequest?.kind !==
-                        "user_input" && t.pendingRequestId
-                    ? ["review"]
-                    : ["review", "snooze"],
+            actions:
+              t.accepted || t.dismissed
+                ? ["review", "reopen"]
+                : t.snoozed
+                  ? ["review", "unsnooze"]
+                  : t.attentionCategory === "review"
+                    ? ["review", "accept", "snooze"]
+                    : t.canDismiss
+                      ? ["review", "dismiss", "snooze"]
+                      : all.find((source) => source.id === t.id)?.pendingRuntimeRequest?.kind !==
+                            "user_input" && t.pendingRequestId
+                        ? ["review"]
+                        : ["review", "snooze"],
           }));
-        const attention = attentionItems.filter((t) => !t.accepted && !t.snoozed);
+        const attention = attentionItems.filter((t) => !t.accepted && !t.dismissed && !t.snoozed);
         const timeline = [
           ...cards.map((t) => ({
             id: t.id,
@@ -518,8 +547,9 @@ const make = Effect.gen(function* () {
           mode: "live",
           projects: projectCards,
           needsAttention: attention,
-          snoozedAttention: attentionItems.filter((t) => t.snoozed && !t.accepted),
+          snoozedAttention: attentionItems.filter((t) => t.snoozed && !t.accepted && !t.dismissed),
           acceptedAttention: attentionItems.filter((t) => t.accepted),
+          dismissedAttention: attentionItems.filter((t) => t.dismissed),
           timeline,
           truncated: candidates.length > 300 || activeProjects.length > 100,
           summary: {
@@ -603,13 +633,15 @@ const make = Effect.gen(function* () {
           return yield* new PluginError({ reason: "stale-view" });
         const commandId = CommandId.make(yield* randomUuidV4);
         const now = yield* DateTime.now;
-        if (input.disposition === "accept") {
+        if (input.disposition === "accept" || input.disposition === "dismiss") {
           if (
             thread.activeRunId ||
             thread.pendingRuntimeRequest ||
             thread.hasActionableProposedPlan ||
             thread.blockedOnThreadWait ||
-            thread.status !== "completed" ||
+            (input.disposition === "dismiss"
+              ? !canDismissThread(thread)
+              : thread.status !== "completed") ||
             !thread.latestRunId ||
             (thread.pendingBackgroundTasks?.length ?? 0) > 0
           )
@@ -624,6 +656,8 @@ const make = Effect.gen(function* () {
           if (
             !settled ||
             settled.latestRunId !== thread.latestRunId ||
+            settled.status !== thread.status ||
+            (input.disposition === "dismiss" && !canDismissThread(settled)) ||
             settled.activeRunId ||
             settled.pendingRuntimeRequest ||
             settled.hasActionableProposedPlan ||
@@ -633,12 +667,13 @@ const make = Effect.gen(function* () {
             !settled.settledAt
           )
             return yield* new PluginError({ reason: "stale-view" });
-          yield* reviews.accept({
-            threadId: thread.id,
-            runId: thread.latestRunId,
-            acceptedAt: IsoDateTime.make(DateTime.formatIso(now)),
-            settledAt: IsoDateTime.make(DateTime.formatIso(settled.settledAt)),
-          });
+          if (input.disposition === "accept")
+            yield* reviews.accept({
+              threadId: thread.id,
+              runId: thread.latestRunId,
+              acceptedAt: IsoDateTime.make(DateTime.formatIso(now)),
+              settledAt: IsoDateTime.make(DateTime.formatIso(settled.settledAt)),
+            });
         } else if (input.disposition === "reopen") {
           yield* threads.dispatch({
             type: "thread.unsettle",

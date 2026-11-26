@@ -780,6 +780,7 @@ function attentionItem(threadId) {
     ...(state.snap?.needsAttention ?? []),
     ...(state.snap?.snoozedAttention ?? []),
     ...(state.snap?.acceptedAttention ?? []),
+    ...(state.snap?.dismissedAttention ?? []),
   ].find((item) => item.threadId === threadId);
 }
 
@@ -817,9 +818,13 @@ async function triageThread(threadId, disposition, undoing = false, expected = n
           : {}),
       }),
     });
-    const reverse = { accept: "reopen", reopen: "accept", snooze: "unsnooze", unsnooze: "snooze" }[
-      disposition
-    ];
+    const reverse = {
+      accept: "reopen",
+      dismiss: "reopen",
+      reopen: item?.dismissed || card?.dismissed ? "dismiss" : "accept",
+      snooze: "unsnooze",
+      unsnooze: "snooze",
+    }[disposition];
     state.triageUndo = undoing
       ? null
       : {
@@ -1091,7 +1096,7 @@ document.addEventListener("click", (e) => {
     e.stopPropagation();
     const act = attAction.dataset.attentionAction;
     const threadId = attAction.dataset.threadId;
-    if (act === "dismiss") void triageThread(threadId, "accept");
+    if (act === "dismiss") void triageThread(threadId, "dismiss");
     else if (act === "diff") selectThread(threadId, { tab: "diff", openDrawer: true });
     else if (act === "reply")
       selectThread(threadId, { tab: "activity", openDrawer: true, focusComposer: true });

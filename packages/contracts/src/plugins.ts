@@ -168,7 +168,7 @@ export const MissionControlRequest = Schema.Union([
   Schema.Struct({
     action: Schema.Literal("triage"),
     threadId: ThreadId,
-    disposition: Schema.Literals(["accept", "reopen", "snooze", "unsnooze"]),
+    disposition: Schema.Literals(["accept", "dismiss", "reopen", "snooze", "unsnooze"]),
     expectedLatestRunId: Schema.NullOr(RunId),
     expectedRequestId: Schema.optional(Schema.NullOr(RuntimeRequestId)),
     snoozedUntil: Schema.optional(IsoDateTime),
