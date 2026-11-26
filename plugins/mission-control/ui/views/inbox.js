@@ -24,7 +24,8 @@ const GROUPS = [
 function renderItem(item, state) {
   const actions = item.actions ?? ["review", "snooze"];
   const labels = {
-    review: "Review & respond",
+    review: actions.includes("dismiss") || item.dismissed ? "Review details" : "Review & respond",
+    dismiss: "Dismiss",
     accept: "Accept work",
     reopen: "Reopen",
     snooze: "Snooze 1 hour",
@@ -50,7 +51,9 @@ export function renderInbox(snap, state) {
       ? (snap.snoozedAttention ?? [])
       : scope === "accepted"
         ? (snap.acceptedAttention ?? [])
-        : (snap.needsAttention ?? []);
+        : scope === "dismissed"
+          ? (snap.dismissedAttention ?? [])
+          : (snap.needsAttention ?? []);
   const visible = items.filter(
     (item) =>
       !query ||
@@ -64,6 +67,7 @@ export function renderInbox(snap, state) {
     ["active", "Actionable"],
     ["snoozed", "Snoozed"],
     ["accepted", "Accepted"],
+    ["dismissed", "Dismissed"],
   ]
     .map(
       ([key, label]) =>
@@ -73,9 +77,9 @@ export function renderInbox(snap, state) {
       "",
     )}</div><button type="button" class="mc-btn-subtle" data-action="next-attention" ${(snap.needsAttention ?? []).length ? "" : "disabled"}>Next actionable item</button></div>`;
   if (!visible.length)
-    return `${tabs}<div class="mc-empty"><h2 class="mc-empty-title">${query ? "No matching items" : scope === "active" ? "Nothing needs your attention" : scope === "snoozed" ? "No snoozed work" : "No accepted work"}</h2><p class="mc-empty-sub">${scope === "active" ? "New decisions, failures, and results ready for review appear here. Browse all projects in Overview." : "Work you explicitly move here remains available to restore."}</p></div>`;
+    return `${tabs}<div class="mc-empty"><h2 class="mc-empty-title">${query ? "No matching items" : scope === "active" ? "Nothing needs your attention" : scope === "snoozed" ? "No snoozed work" : scope === "dismissed" ? "No dismissed runs" : "No accepted work"}</h2><p class="mc-empty-sub">${scope === "active" ? "New decisions, failures, and results ready for review appear here. Browse all projects in Overview." : "Work you explicitly move here remains available to restore."}</p></div>`;
   if (scope !== "active")
-    return `${tabs}<section class="mc-section"><h2 class="mc-section-title">${scope === "snoozed" ? "Snoozed work" : "Accepted work"}</h2><div class="mc-inbox-list">${visible.map((item) => renderItem(item, state)).join("")}</div></section>`;
+    return `${tabs}<section class="mc-section"><h2 class="mc-section-title">${scope === "snoozed" ? "Snoozed work" : scope === "dismissed" ? "Dismissed runs" : "Accepted work"}</h2><div class="mc-inbox-list">${visible.map((item) => renderItem(item, state)).join("")}</div></section>`;
   return (
     tabs +
     GROUPS.map((group) => {

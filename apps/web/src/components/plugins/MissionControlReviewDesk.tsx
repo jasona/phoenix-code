@@ -66,7 +66,12 @@ const PreviewPanel = lazy(() =>
 type DeskPane = "conversation" | "changes" | "terminal" | "preview" | "file";
 type DeskFile = Extract<RightPanelSurface, { kind: "file" | "files" }>;
 const isReviewStatus = Schema.is(
-  Schema.Struct({ accepted: Schema.Boolean, latestRunId: Schema.NullOr(RunId) }),
+  Schema.Struct({
+    accepted: Schema.Boolean,
+    dismissed: Schema.optionalKey(Schema.Boolean),
+    canDismiss: Schema.optionalKey(Schema.Boolean),
+    latestRunId: Schema.NullOr(RunId),
+  }),
 );
 
 export function MissionControlReviewDesk({
@@ -87,6 +92,8 @@ export function MissionControlReviewDesk({
   const hostRequest = useStableCallback(sendHostRequest);
   const [review, setReview] = useState<{
     accepted: boolean;
+    dismissed: boolean;
+    canDismiss: boolean;
     latestRunId: RunId | null;
     requestKey: string;
   } | null>(null);
@@ -99,6 +106,12 @@ export function MissionControlReviewDesk({
     latestRunId,
     shell?.settledAt,
     shell?.unsettledAt,
+    shell?.source.status,
+    shell?.source.pendingRuntimeRequest?.id,
+    shell?.source.hasActionableProposedPlan,
+    shell?.source.blockedOnThreadWait,
+    shell?.source.pendingGuestMessageCount,
+    shell?.pendingBackgroundTasks.length,
     reloadReview,
   ]);
   const reviewLoaded =
@@ -111,6 +124,15 @@ export function MissionControlReviewDesk({
     shell.source.latestRunId !== null &&
     shell.pendingBackgroundTasks.length === 0;
   const accepted = reviewLoaded && review.accepted && canAccept;
+  const canDismiss =
+    reviewLoaded &&
+    review.canDismiss &&
+    shell?.source.activeRunId === null &&
+    shell.source.pendingRuntimeRequest === null &&
+    !shell.source.hasActionableProposedPlan &&
+    shell.pendingBackgroundTasks.length === 0;
+  const dismissed = canDismiss && review.dismissed;
+  const resolved = accepted || dismissed;
   const changeReview = async () => {
     if (!canOperate || changingReview || !shell || !reviewLoaded) return;
     setChangingReview(true);
@@ -124,7 +146,7 @@ export function MissionControlReviewDesk({
           request: {
             action: "triage",
             threadId: threadRef.threadId,
-            disposition: accepted ? "reopen" : "accept",
+            disposition: resolved ? "reopen" : canDismiss ? "dismiss" : "accept",
             expectedLatestRunId: latestRunId,
             expectedRequestId: shell.source.pendingRuntimeRequest?.id ?? null,
           },
@@ -154,6 +176,8 @@ export function MissionControlReviewDesk({
       if (result._tag === "Success" && isReviewStatus(result.value)) {
         setReview({
           accepted: result.value.accepted,
+          dismissed: result.value.dismissed ?? false,
+          canDismiss: result.value.canDismiss ?? false,
           latestRunId: result.value.latestRunId,
           requestKey: reviewRequestKey,
         });
@@ -192,11 +216,11 @@ export function MissionControlReviewDesk({
         </h2>
         <Button
           size="sm"
-          variant={accepted ? "outline" : "default"}
+          variant={resolved ? "outline" : "default"}
           disabled={
             !canOperate ||
             changingReview ||
-            (!reviewFailed && (!reviewLoaded || (!accepted && !canAccept)))
+            (!reviewFailed && (!reviewLoaded || (!resolved && !canAccept && !canDismiss)))
           }
           onClick={() => {
             if (reviewFailed) {
@@ -211,7 +235,11 @@ export function MissionControlReviewDesk({
               ? gt("Saving…")
               : accepted
                 ? gt("Reopen review")
-                : gt("Accept review")}
+                : dismissed
+                  ? gt("Reopen")
+                  : canDismiss
+                    ? gt("Dismiss")
+                    : gt("Accept review")}
         </Button>
       </div>
       {reviewFailed && (

@@ -295,6 +295,7 @@ const decodeInbox = Schema.decodeUnknownSync(
     needsAttention: Schema.Array(attentionEntry),
     snoozedAttention: Schema.Array(attentionEntry),
     acceptedAttention: Schema.Array(attentionEntry),
+    dismissedAttention: Schema.Array(attentionEntry),
   }),
 );
 
@@ -322,6 +323,38 @@ it.effect(
         snoozedUntil: DateTime.add(now, { hours: 1 }),
       }),
       thread("failed", { ...completed, status: "failed" }),
+      thread("stopped", { ...completed, status: "interrupted" }),
+      thread("dismissed", {
+        ...completed,
+        status: "interrupted",
+        settledOverride: "settled",
+        settledAt: now,
+      }),
+      thread("cancelled", {
+        ...completed,
+        status: "cancelled",
+        settledOverride: "settled",
+        settledAt: now,
+      }),
+      thread("stopped-reopened", {
+        ...completed,
+        status: "interrupted",
+        settledOverride: "active",
+      }),
+      thread("stopped-new-run", {
+        ...completed,
+        status: "interrupted",
+        settledOverride: "settled",
+        settledAt: now,
+        latestRunCompletedAt: DateTime.add(now, { seconds: 1 }),
+      }),
+      thread("stopped-question", {
+        ...completed,
+        status: "interrupted",
+        settledOverride: "settled",
+        settledAt: now,
+        pendingRuntimeRequest: decodePending({ id: "request", kind: "user_input", createdAt: now }),
+      }),
       thread("question", {
         pendingRuntimeRequest: decodePending({ id: "request", kind: "user_input", createdAt: now }),
       }),
@@ -350,6 +383,10 @@ it.effect(
         new Map([
           ["read", "review"],
           ["failed", "failure"],
+          ["stopped", "failure"],
+          ["stopped-reopened", "failure"],
+          ["stopped-new-run", "failure"],
+          ["stopped-question", "decision"],
           ["question", "decision"],
           ["agent-settled", "review"],
           ["reopened", "review"],
@@ -364,6 +401,10 @@ it.effect(
         result.snoozedAttention.map((entry) => entry.threadId),
         ["snoozed"],
       );
+      assert.deepStrictEqual(result.dismissedAttention.map((entry) => entry.threadId).sort(), [
+        "cancelled",
+        "dismissed",
+      ]);
       assert.include(result.needsAttention.find((entry) => entry.threadId === "read")?.id, "run");
       yield* TestClock.adjust("1 second");
       const unchanged = decodeUnchanged(
@@ -404,6 +445,24 @@ it.effect(
     const all = new Map(
       [
         thread("ready", { latestRunId: runId, status: "completed" }),
+        thread("stopped", { latestRunId: runId, status: "interrupted" }),
+        thread("cancelled", { latestRunId: runId, status: "cancelled" }),
+        thread("failed", { latestRunId: runId, status: "failed" }),
+        thread("stopped-plan", {
+          latestRunId: runId,
+          status: "interrupted",
+          hasActionableProposedPlan: true,
+        }),
+        thread("stopped-child", {
+          latestRunId: runId,
+          status: "interrupted",
+          blockedOnThreadWait: true,
+        }),
+        thread("stopped-guest", {
+          latestRunId: runId,
+          status: "interrupted",
+          pendingGuestMessageCount: 1,
+        }),
         thread("working", { latestRunId: runId, activeRunId: runId, status: "running" }),
         thread("plan", {
           latestRunId: runId,
@@ -471,6 +530,68 @@ it.effect(
         commands.map((command) => command.type),
         ["thread.settle", "thread.unsettle", "thread.snooze", "thread.unsnooze"],
       );
+      for (const id of [
+        "working",
+        "plan",
+        "ready",
+        "failed",
+        "stopped-plan",
+        "stopped-child",
+        "stopped-guest",
+        "question",
+      ]) {
+        const error = yield* service
+          .request({
+            action: "triage",
+            threadId: ThreadId.make(id),
+            disposition: "dismiss",
+            expectedLatestRunId: runId,
+            ...(id === "question"
+              ? { expectedRequestId: RuntimeRequestId.make("new-request") }
+              : {}),
+          })
+          .pipe(Effect.asVoid, Effect.flip);
+        assert.strictEqual(error.reason, "permission-denied");
+      }
+      const stale = yield* service
+        .request({
+          action: "triage",
+          threadId: ThreadId.make("stopped"),
+          disposition: "dismiss",
+          expectedLatestRunId: RunId.make("old"),
+        })
+        .pipe(Effect.asVoid, Effect.flip);
+      assert.strictEqual(stale.reason, "stale-view");
+      for (const id of ["stopped", "cancelled"]) {
+        const accept = yield* service
+          .request({
+            action: "triage",
+            threadId: ThreadId.make(id),
+            disposition: "accept",
+            expectedLatestRunId: runId,
+          })
+          .pipe(Effect.asVoid, Effect.flip);
+        assert.strictEqual(accept.reason, "permission-denied");
+        yield* service.request({
+          action: "triage",
+          threadId: ThreadId.make(id),
+          disposition: "dismiss",
+          expectedLatestRunId: runId,
+        });
+        const dismissed = decodeInbox(yield* service.request({ action: "snapshot" }));
+        assert.isTrue(dismissed.dismissedAttention.some((entry) => entry.threadId === id));
+        assert.isFalse(dismissed.needsAttention.some((entry) => entry.threadId === id));
+        assert.isFalse(dismissed.acceptedAttention.some((entry) => entry.threadId === id));
+        yield* service.request({
+          action: "triage",
+          threadId: ThreadId.make(id),
+          disposition: "reopen",
+          expectedLatestRunId: runId,
+        });
+        const reopened = decodeInbox(yield* service.request({ action: "snapshot" }));
+        assert.isTrue(reopened.needsAttention.some((entry) => entry.threadId === id));
+        assert.isFalse(reopened.dismissedAttention.some((entry) => entry.threadId === id));
+      }
       const accepted = commands[0];
       assert.isTrue(accepted?.type === "thread.settle" && accepted.expectedLatestRunId === runId);
     }).pipe(
@@ -481,6 +602,13 @@ it.effect(
               platform,
               Layer.mock(Threads.ThreadManagementService)({
                 getThreadShell: (id) => Effect.succeed(all.get(id) ?? null),
+                getShellSnapshot: () =>
+                  Effect.succeed({
+                    schemaVersion: 2,
+                    snapshotSequence: 0,
+                    threads: [...all.values()],
+                    archivedThreads: [],
+                  }),
                 dispatch: (command) =>
                   Effect.sync(() => {
                     commands.push(command);
