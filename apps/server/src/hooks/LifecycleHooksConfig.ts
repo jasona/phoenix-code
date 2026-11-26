@@ -1,7 +1,7 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Live mtime-cached hooks config loader runs synchronously on the fast-path guard.
-import * as fs from "node:fs";
+import * as NodeFS from "node:fs";
 
-export const LIFECYCLE_HOOK_EVENTS = [
+const LIFECYCLE_HOOK_EVENTS = [
   "UserPromptSubmit",
   "PreToolUse",
   "PostToolUse",
@@ -17,9 +17,9 @@ export type LifecycleHookEventName = (typeof LIFECYCLE_HOOK_EVENTS)[number];
 
 const LIFECYCLE_HOOK_EVENT_SET = new Set<string>(LIFECYCLE_HOOK_EVENTS);
 
-export const DEFAULT_HOOK_TIMEOUT_MS = 3_000;
-export const MIN_HOOK_TIMEOUT_MS = 500;
-export const MAX_HOOK_TIMEOUT_MS = 30_000;
+const DEFAULT_HOOK_TIMEOUT_MS = 3_000;
+const MIN_HOOK_TIMEOUT_MS = 500;
+const MAX_HOOK_TIMEOUT_MS = 30_000;
 
 export interface CompiledHookMatcher {
   readonly test: (target: string | undefined) => boolean;
@@ -191,9 +191,9 @@ export function makeLifecycleHooksConfigLoader(
     }
     lastCheckAt = now;
 
-    let stat: fs.Stats;
+    let stat: NodeFS.Stats;
     try {
-      stat = fs.statSync(hooksConfigPath);
+      stat = NodeFS.statSync(hooksConfigPath);
     } catch (err) {
       const code = (err as NodeJS.ErrnoException | undefined)?.code;
       if (code === "ENOENT" || code === "ENOTDIR") {
@@ -217,7 +217,7 @@ export function makeLifecycleHooksConfigLoader(
     lastMtimeMs = stat.mtimeMs;
     lastSize = stat.size;
     try {
-      const raw = fs.readFileSync(hooksConfigPath, "utf8");
+      const raw = NodeFS.readFileSync(hooksConfigPath, "utf8");
       cached = parseLifecycleHooksConfig(raw);
       lastWarnSignature = null;
       return { config: cached };

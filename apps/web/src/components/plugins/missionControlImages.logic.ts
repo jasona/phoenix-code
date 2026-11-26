@@ -132,7 +132,13 @@ const IMAGE_PATH_FIELD_KEYS = [
 
 const IMAGE_PATH_ARRAY_KEYS = ["savedPaths", "outputPaths", "paths", "files", "images"] as const;
 
-const PROMPT_FIELD_KEYS = ["prompt", "revisedPrompt", "revised_prompt", "brief", "description"] as const;
+const PROMPT_FIELD_KEYS = [
+  "prompt",
+  "revisedPrompt",
+  "revised_prompt",
+  "brief",
+  "description",
+] as const;
 
 const ABSOLUTE_OR_FILE_IMAGE_PATH_PATTERN =
   /(?:file:\/\/[^\s"'`<>()[\]]+|(?:\/|[A-Za-z]:[\\/])[^\s"'`<>()[\]]+\.(?:png|jpe?g|webp|gif|avif|svg|bmp|tiff?|heic|heif))/gi;
@@ -256,17 +262,23 @@ function extractPromptFromInput(input: unknown): string | null {
   return null;
 }
 
-function isImageGenerationTool(item: Extract<ThreadStructureTurnItem, { readonly type: "dynamic_tool" }>): boolean {
+function isImageGenerationTool(
+  item: Extract<ThreadStructureTurnItem, { readonly type: "dynamic_tool" }>,
+): boolean {
   if (item.toolName && IMAGE_GENERATION_TOOL_PATTERN.test(item.toolName)) return true;
   if (item.title && IMAGE_GENERATION_TOOL_PATTERN.test(item.title)) return true;
   return false;
 }
 
-function isImageWriteTool(item: Extract<ThreadStructureTurnItem, { readonly type: "dynamic_tool" }>): boolean {
+function isImageWriteTool(
+  item: Extract<ThreadStructureTurnItem, { readonly type: "dynamic_tool" }>,
+): boolean {
   return item.toolName !== null && IMAGE_WRITE_TOOL_PATTERN.test(item.toolName);
 }
 
-function isImageGeneratorSubagent(item: Extract<ThreadStructureTurnItem, { readonly type: "subagent" }>): boolean {
+function isImageGeneratorSubagent(
+  item: Extract<ThreadStructureTurnItem, { readonly type: "subagent" }>,
+): boolean {
   if (item.title && IMAGE_GENERATOR_SUBAGENT_PATTERN.test(item.title)) return true;
   return /\bimage-generator\b/i.test(item.prompt);
 }
@@ -423,7 +435,10 @@ export function deriveMissionControlImageStream(
   }) => {
     const trimmed = input.path.trim();
     if (!trimmed || /[\r\n]/.test(trimmed) || !isWorkspaceImagePreviewPath(trimmed)) return false;
-    if (!input.allowUserProvided && isUserProvidedImagePath(trimmed, userProvidedKeys, workspaceRoot)) {
+    if (
+      !input.allowUserProvided &&
+      isUserProvidedImagePath(trimmed, userProvidedKeys, workspaceRoot)
+    ) {
       return false;
     }
     const resolved = resolveViewedImageAsset(trimmed, { threadId, workspaceRoot });
@@ -562,7 +577,11 @@ export function deriveMissionControlImageStream(
           }
         }
 
-        if (savedCount === 0 && (isImageGen || isImageWriteTool(item)) && item.status === "completed") {
+        if (
+          savedCount === 0 &&
+          (isImageGen || isImageWriteTool(item)) &&
+          item.status === "completed"
+        ) {
           for (const path of collectImagePathsFromUnknown(item.input)) {
             if (
               recordWorkspacePath({
@@ -583,7 +602,8 @@ export function deriveMissionControlImageStream(
         const inlineImages = turnItemOutputImages(item);
         if (inlineImages.length > 0 && savedCount === 0) {
           for (const resource of inlineImages) {
-            const title = cleanSingleLine(item.title) ?? cleanSingleLine(item.toolName) ?? "Captured image";
+            const title =
+              cleanSingleLine(item.title) ?? cleanSingleLine(item.toolName) ?? "Captured image";
             upsertImage({
               id: `tool-output:${item.id}:${resource.index}`,
               runId: item.runId,
@@ -615,10 +635,7 @@ export function deriveMissionControlImageStream(
           });
         }
 
-        if (
-          item.viewedImagePath &&
-          !isIgnorableViewedAssetPath(item.viewedImagePath)
-        ) {
+        if (item.viewedImagePath && !isIgnorableViewedAssetPath(item.viewedImagePath)) {
           recordWorkspacePath({
             path: item.viewedImagePath,
             runId: item.runId,
@@ -803,9 +820,7 @@ export function deriveMissionControlImageStream(
   }));
 
   const activeRunImageCount =
-    activeRunId === null
-      ? 0
-      : images.filter((image) => image.runId === activeRunId).length;
+    activeRunId === null ? 0 : images.filter((image) => image.runId === activeRunId).length;
 
   const phase: MissionControlImageStreamPhase =
     pending.length > 0 || (runActive && activeRunImageCount > 0)
@@ -820,9 +835,7 @@ export function deriveMissionControlImageStream(
 
   const latestImage = images.at(-1) ?? null;
   const startedAt =
-    images[0]?.createdAt ??
-    pending[0]?.startedAt ??
-    formatOptionalDateTime(latestRun?.startedAt);
+    images[0]?.createdAt ?? pending[0]?.startedAt ?? formatOptionalDateTime(latestRun?.startedAt);
   const latestActivityAt =
     pending.at(-1)?.startedAt ??
     latestImage?.updatedAt ??
@@ -841,11 +854,12 @@ export function deriveMissionControlImageStream(
   };
 }
 
-export const MISSION_CONTROL_IMAGES_DOCK_MIN_WIDTH = 680;
-export const MISSION_CONTROL_DUAL_SIDEBAR_MIN_WIDTH = 1240;
+const MISSION_CONTROL_IMAGES_DOCK_MIN_WIDTH = 680;
+const MISSION_CONTROL_DUAL_SIDEBAR_MIN_WIDTH = 1240;
 
 export interface MissionControlSidebarsState {
   readonly tasksVisible: boolean;
+  readonly subagentsVisible: boolean;
   readonly imagesVisible: boolean;
   readonly tasksMode: "docked" | "overlay";
   readonly imagesMode: "docked" | "overlay";
@@ -854,26 +868,32 @@ export interface MissionControlSidebarsState {
 
 export function resolveMissionControlSidebars(input: {
   readonly hasTasks: boolean;
+  readonly hasSubagents?: boolean;
   readonly hasImages: boolean;
   readonly imagesStreaming: boolean;
   readonly windowWidth: number;
   readonly savedTasksOpen: boolean | undefined;
+  readonly savedSubagentsOpen?: boolean | undefined;
   readonly savedImagesOpen: boolean | undefined;
-  readonly preferredSidebar: "tasks" | "images" | undefined;
+  readonly preferredSidebar: "tasks" | "subagents" | "images" | undefined;
 }): MissionControlSidebarsState {
   const canDock = input.windowWidth >= MISSION_CONTROL_IMAGES_DOCK_MIN_WIDTH;
   const canDockBoth = input.windowWidth >= MISSION_CONTROL_DUAL_SIDEBAR_MIN_WIDTH;
 
   const wantsTasks =
-    input.hasTasks &&
-    (typeof input.savedTasksOpen === "boolean" ? input.savedTasksOpen : canDock);
+    input.hasTasks && (typeof input.savedTasksOpen === "boolean" ? input.savedTasksOpen : canDock);
+  const wantsSubagents =
+    Boolean(input.hasSubagents) &&
+    (typeof input.savedSubagentsOpen === "boolean" ? input.savedSubagentsOpen : canDock);
+  const wantsWork = wantsTasks || wantsSubagents;
   const wantsImages =
     input.hasImages &&
     (typeof input.savedImagesOpen === "boolean" ? input.savedImagesOpen : canDock);
 
-  if (!wantsTasks && !wantsImages) {
+  if (!wantsWork && !wantsImages) {
     return {
       tasksVisible: false,
+      subagentsVisible: false,
       imagesVisible: false,
       tasksMode: canDock ? "docked" : "overlay",
       imagesMode: canDock ? "docked" : "overlay",
@@ -881,16 +901,19 @@ export function resolveMissionControlSidebars(input: {
     };
   }
 
-  if (wantsTasks && wantsImages && !canDockBoth) {
+  if (wantsWork && wantsImages && !canDockBoth) {
     // Only one right-hand sidebar fits alongside the conversation below the dual-dock width.
     const preferImages =
       input.preferredSidebar === "images"
         ? true
-        : input.preferredSidebar === "tasks"
+        : input.preferredSidebar === "tasks" || input.preferredSidebar === "subagents"
           ? false
-          : input.imagesStreaming || input.savedImagesOpen === true || input.savedTasksOpen !== true;
+          : input.imagesStreaming ||
+            input.savedImagesOpen === true ||
+            (input.savedTasksOpen !== true && input.savedSubagentsOpen !== true);
     return {
-      tasksVisible: !preferImages,
+      tasksVisible: !preferImages && wantsTasks,
+      subagentsVisible: !preferImages && wantsSubagents,
       imagesVisible: preferImages,
       tasksMode: canDock ? "docked" : "overlay",
       imagesMode: canDock ? "docked" : "overlay",
@@ -900,9 +923,10 @@ export function resolveMissionControlSidebars(input: {
 
   return {
     tasksVisible: wantsTasks,
+    subagentsVisible: wantsSubagents,
     imagesVisible: wantsImages,
     tasksMode: canDock ? "docked" : "overlay",
     imagesMode: canDock ? "docked" : "overlay",
-    dockedSidebarCount: canDock ? (wantsTasks ? 1 : 0) + (wantsImages ? 1 : 0) : 0,
+    dockedSidebarCount: canDock ? (wantsWork ? 1 : 0) + (wantsImages ? 1 : 0) : 0,
   };
 }

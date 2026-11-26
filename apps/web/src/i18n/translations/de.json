@@ -3241,10 +3241,7 @@
       "v": "v"
     },
     {
-      "c": [
-        " ",
-        "auf dem Computer, der diese Seite geöffnet hat"
-      ],
+      "c": [" ", "auf dem Computer, der diese Seite geöffnet hat"],
       "i": 2,
       "t": "span"
     }
@@ -3256,10 +3253,7 @@
       "v": "v"
     },
     {
-      "c": [
-        " ",
-        "· wer es ausführt, erhält diesen Zugriff"
-      ],
+      "c": [" ", "· wer es ausführt, erhält diesen Zugriff"],
       "i": 2,
       "t": "span"
     }
@@ -6269,9 +6263,21 @@
   "e96b2911a5d12031": "File",
   "60324fba185ca3d6": "Prüfwerkzeuge",
   "1b14230874f19eb9": "Images",
+  "b404539547dae339": "Subagents",
   "fae3639874428042": "Aufgaben",
   "df32991384874326": "Neues Terminal",
   "a2f60adfcffc107d": "Öffne ein Terminal, um den Arbeitsbereich dieses Threads zu untersuchen oder Prüfungen auszuführen.",
+  "a16ba028118c675a": "{active} of {total} agents working",
+  "f0bd7f4a57a2a2c3": "Running",
+  "b2c0296bf6dce9ce": "Done",
+  "9f287c80687a21da": "Failed",
+  "dd8d0b9b834fc0cd": "Stopped",
+  "6d24a7cb4e921dce": "Idle",
+  "f4e7c94cb69a9b66": "Live-Aktualisierung",
+  "a47025841b9c23aa": "All subagents finished",
+  "4f6d021901feff84": "Hide subagents sidebar",
+  "c67f77211840d7ee": "Subagents and tasks",
+  "09735b0e3ab4e5b2": "Agent-Aufgaben",
   "e9d5ad90c4c0be79": "Aktiv",
   "ff692a02fdfac77b": "Fehlgeschlagen",
   "2643898bbb930f1f": "Gestoppt",
@@ -6284,11 +6290,9 @@
   "d6343ed2791eda97": "{count, plural, one {{count} verbleibend} other {{count} verbleibend}}",
   "57d789fac3653dc5": "Gestoppt",
   "2a7a99dc5969dccc": "Aktiv",
-  "f4e7c94cb69a9b66": "Live-Aktualisierung",
   "ec3bc12b0e1fef87": "Aufgaben erledigt · Abschluss",
   "4364e40e7a3081eb": "Abgeschlossen",
   "f320670b89204493": "Fertig · {done}/{total} erledigt",
-  "09735b0e3ab4e5b2": "Agent-Aufgaben",
   "f79d12a232e22bc5": "Aufgaben-Seitenleiste ausblenden",
   "2fae65c9adad5e28": "Aufgabenfortschritt",
   "d1b9999482deb91c": "Erledigt",

@@ -398,6 +398,7 @@ describe("resolveMissionControlSidebars", () => {
       }),
     ).toEqual({
       tasksVisible: false,
+      subagentsVisible: false,
       imagesVisible: true,
       tasksMode: "docked",
       imagesMode: "docked",
@@ -418,6 +419,51 @@ describe("resolveMissionControlSidebars", () => {
       }),
     ).toEqual({
       tasksVisible: true,
+      subagentsVisible: false,
+      imagesVisible: true,
+      tasksMode: "docked",
+      imagesMode: "docked",
+      dockedSidebarCount: 2,
+    });
+  });
+
+  it("stacks subagents and tasks in a single right-hand docked rail", () => {
+    expect(
+      resolveMissionControlSidebars({
+        hasTasks: true,
+        hasSubagents: true,
+        hasImages: false,
+        imagesStreaming: false,
+        windowWidth: 960,
+        savedTasksOpen: undefined,
+        savedSubagentsOpen: undefined,
+        savedImagesOpen: undefined,
+        preferredSidebar: undefined,
+      }),
+    ).toEqual({
+      tasksVisible: true,
+      subagentsVisible: true,
+      imagesVisible: false,
+      tasksMode: "docked",
+      imagesMode: "docked",
+      dockedSidebarCount: 1,
+    });
+
+    expect(
+      resolveMissionControlSidebars({
+        hasTasks: true,
+        hasSubagents: true,
+        hasImages: true,
+        imagesStreaming: false,
+        windowWidth: 1320,
+        savedTasksOpen: undefined,
+        savedSubagentsOpen: undefined,
+        savedImagesOpen: undefined,
+        preferredSidebar: undefined,
+      }),
+    ).toEqual({
+      tasksVisible: true,
+      subagentsVisible: true,
       imagesVisible: true,
       tasksMode: "docked",
       imagesMode: "docked",
@@ -429,15 +475,18 @@ describe("resolveMissionControlSidebars", () => {
     expect(
       resolveMissionControlSidebars({
         hasTasks: true,
+        hasSubagents: true,
         hasImages: true,
         imagesStreaming: true,
         windowWidth: 900,
         savedTasksOpen: undefined,
+        savedSubagentsOpen: undefined,
         savedImagesOpen: undefined,
-        preferredSidebar: "tasks",
+        preferredSidebar: "subagents",
       }),
     ).toEqual({
       tasksVisible: true,
+      subagentsVisible: true,
       imagesVisible: false,
       tasksMode: "docked",
       imagesMode: "docked",
@@ -449,15 +498,18 @@ describe("resolveMissionControlSidebars", () => {
     expect(
       resolveMissionControlSidebars({
         hasTasks: false,
+        hasSubagents: true,
         hasImages: true,
         imagesStreaming: true,
         windowWidth: 560,
         savedTasksOpen: undefined,
+        savedSubagentsOpen: undefined,
         savedImagesOpen: undefined,
         preferredSidebar: undefined,
       }),
     ).toEqual({
       tasksVisible: false,
+      subagentsVisible: false,
       imagesVisible: false,
       tasksMode: "overlay",
       imagesMode: "overlay",

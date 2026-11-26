@@ -3242,10 +3242,7 @@
     {
       "t": "span",
       "i": 2,
-      "c": [
-        " ",
-        "on the computer that opened this page"
-      ]
+      "c": [" ", "on the computer that opened this page"]
     }
   ],
   "b2d53b4d1d48fbef": [
@@ -3257,10 +3254,7 @@
     {
       "t": "span",
       "i": 2,
-      "c": [
-        " ",
-        "· whoever runs it gets this access"
-      ]
+      "c": [" ", "· whoever runs it gets this access"]
     }
   ],
   "c54cc9c75db9dc58": "Only approve a sign-in you just started.",
@@ -6273,9 +6267,21 @@
   "e96b2911a5d12031": "File",
   "60324fba185ca3d6": "Review tools",
   "1b14230874f19eb9": "Images",
+  "b404539547dae339": "Subagents",
   "fae3639874428042": "Tasks",
   "df32991384874326": "New terminal",
   "a2f60adfcffc107d": "Open a terminal to inspect or run checks in this thread's workspace.",
+  "a16ba028118c675a": "{active} of {total} agents working",
+  "f0bd7f4a57a2a2c3": "Running",
+  "b2c0296bf6dce9ce": "Done",
+  "9f287c80687a21da": "Failed",
+  "dd8d0b9b834fc0cd": "Stopped",
+  "6d24a7cb4e921dce": "Idle",
+  "f4e7c94cb69a9b66": "Updating live",
+  "a47025841b9c23aa": "All subagents finished",
+  "4f6d021901feff84": "Hide subagents sidebar",
+  "c67f77211840d7ee": "Subagents and tasks",
+  "09735b0e3ab4e5b2": "Agent tasks",
   "e9d5ad90c4c0be79": "Active",
   "ff692a02fdfac77b": "Failed",
   "2643898bbb930f1f": "Stopped",
@@ -6288,11 +6294,9 @@
   "d6343ed2791eda97": "{count, plural, one {{count} remaining} other {{count} remaining}}",
   "57d789fac3653dc5": "Stopped",
   "2a7a99dc5969dccc": "Active",
-  "f4e7c94cb69a9b66": "Updating live",
   "ec3bc12b0e1fef87": "Tasks done · wrapping up",
   "4364e40e7a3081eb": "Finished",
   "f320670b89204493": "Finished · {done}/{total} done",
-  "09735b0e3ab4e5b2": "Agent tasks",
   "f79d12a232e22bc5": "Hide tasks sidebar",
   "2fae65c9adad5e28": "Task completion progress",
   "d1b9999482deb91c": "Done",

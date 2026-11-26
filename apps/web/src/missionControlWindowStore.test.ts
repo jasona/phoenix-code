@@ -65,9 +65,10 @@ describe("Mission Control window state", () => {
     store.setBounds("local:thread-1", bounds);
     store.setMaximized("local:thread-1", true);
     store.setTasksOpen("local:thread-1", false);
+    store.setSubagentsOpen("local:thread-1", true);
     store.setImagesOpen("local:thread-1", true);
     store.setImagesLayout("local:thread-1", "grid");
-    store.setPreferredSidebar("local:thread-1", "images");
+    store.setPreferredSidebar("local:thread-1", "subagents");
     store.setFile("local:thread-1", file);
     store.setPane("local:thread-1", "file");
     store.setPane("remote:thread-1", "terminal");
@@ -77,9 +78,10 @@ describe("Mission Control window state", () => {
         bounds,
         maximized: true,
         tasksOpen: false,
+        subagentsOpen: true,
         imagesOpen: true,
         imagesLayout: "grid",
-        preferredSidebar: "images",
+        preferredSidebar: "subagents",
         file,
         pane: "file",
       },

@@ -146,18 +146,16 @@ function TaskRow({
   );
 }
 
-export function MissionControlTasksSidebar({
+export function MissionControlTasksSection({
   id,
   summary,
-  mode,
-  wide,
   onClose,
+  className,
 }: {
-  readonly id: string;
+  readonly id?: string | undefined;
   readonly summary: MissionControlTaskSummary;
-  readonly mode: "docked" | "overlay";
-  readonly wide: boolean;
   readonly onClose: () => void;
+  readonly className?: string | undefined;
 }) {
   const gt = useGT();
   const resolve = useMessages();
@@ -201,30 +199,13 @@ export function MissionControlTasksSidebar({
                 total: summary.total,
               });
 
-  const panel = (
-    <aside
+  return (
+    <section
       id={id}
       aria-label={gt("Agent tasks")}
-      data-testid="mission-control-tasks-sidebar"
+      data-testid="mission-control-tasks-section"
       data-tasks-phase={summary.phase}
-      onKeyDown={
-        mode === "overlay"
-          ? (event) => {
-              if (event.key === "Escape") {
-                event.stopPropagation();
-                onClose();
-              }
-            }
-          : undefined
-      }
-      className={cn(
-        "flex h-full min-h-0 flex-col border-l border-border bg-card text-card-foreground",
-        mode === "overlay"
-          ? "absolute inset-y-0 right-0 z-20 w-[min(20rem,calc(100%-2rem))] shadow-xl"
-          : wide
-            ? "w-72 shrink-0"
-            : "w-68 shrink-0",
-      )}
+      className={cn("flex min-h-0 flex-1 flex-col", className)}
     >
       <div className="flex h-10 shrink-0 items-center justify-between gap-2 border-b border-border px-3">
         <div className="flex min-w-0 items-center gap-1.5">
@@ -365,6 +346,51 @@ export function MissionControlTasksSidebar({
           </span>
         ) : null}
       </div>
+    </section>
+  );
+}
+
+export function MissionControlTasksSidebar({
+  id,
+  summary,
+  mode,
+  wide,
+  onClose,
+}: {
+  readonly id: string;
+  readonly summary: MissionControlTaskSummary;
+  readonly mode: "docked" | "overlay";
+  readonly wide: boolean;
+  readonly onClose: () => void;
+}) {
+  const gt = useGT();
+
+  const panel = (
+    <aside
+      id={id}
+      aria-label={gt("Agent tasks")}
+      data-testid="mission-control-tasks-sidebar"
+      data-tasks-phase={summary.phase}
+      onKeyDown={
+        mode === "overlay"
+          ? (event) => {
+              if (event.key === "Escape") {
+                event.stopPropagation();
+                onClose();
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        "flex h-full min-h-0 flex-col border-l border-border bg-card text-card-foreground",
+        mode === "overlay"
+          ? "absolute inset-y-0 right-0 z-20 w-[min(20rem,calc(100%-2rem))] shadow-xl"
+          : wide
+            ? "w-72 shrink-0"
+            : "w-68 shrink-0",
+      )}
+    >
+      <MissionControlTasksSection summary={summary} onClose={onClose} />
     </aside>
   );
 
