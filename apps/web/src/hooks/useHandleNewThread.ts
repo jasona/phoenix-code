@@ -11,6 +11,7 @@ import {
   type ThreadId,
 } from "@t3tools/contracts";
 import { type AnyRouter, useRouter } from "@tanstack/react-router";
+import { createContext, use } from "react";
 import { flushSync } from "react-dom";
 import {
   composerDraftHasUserContent,
@@ -122,11 +123,15 @@ function pickExplicitWorkspaceOptions(options: NewThreadWorkspaceOptions | undef
   };
 }
 
-export function useNewThreadHandler() {
-  return createNewThreadHandler(useRouter());
-}
-
 export type NewThreadHandler = ReturnType<typeof createNewThreadHandler>;
+
+export const NewThreadHandlerContext = createContext<NewThreadHandler | null>(null);
+
+export function useNewThreadHandler() {
+  const handler = use(NewThreadHandlerContext);
+  const router = useRouter();
+  return handler ?? createNewThreadHandler(router);
+}
 
 export function createNewThreadHandler(router: AnyRouter) {
   const getCurrentRouteTarget = () => {
@@ -142,6 +147,7 @@ export function createNewThreadHandler(router: AnyRouter) {
       envMode?: DraftThreadEnvMode;
       startFromOrigin?: boolean;
       replace?: boolean;
+      navigate?: boolean;
       /** Composer text for the draft, set before it shows. A draft with user text keeps it. */
       prompt?: string;
     },
@@ -399,8 +405,9 @@ export function createNewThreadHandler(router: AnyRouter) {
         applyProjectFile?.(emptyStoredDraftThread.draftId);
         const routeTargetAfterWrites = getCurrentRouteTarget();
         if (
-          routeTargetAfterWrites?.kind === "draft" &&
-          routeTargetAfterWrites.draftId === emptyStoredDraftThread.draftId
+          options?.navigate === false ||
+          (routeTargetAfterWrites?.kind === "draft" &&
+            routeTargetAfterWrites.draftId === emptyStoredDraftThread.draftId)
         ) {
           return opened;
         }
@@ -465,11 +472,13 @@ export function createNewThreadHandler(router: AnyRouter) {
       }
       seedPrompt(draftId);
       defaultEnvMode?.applyProjectFile(draftId);
-      await router.navigate({
-        to: "/draft/$draftId",
-        params: { draftId },
-        replace: options?.replace ?? false,
-      });
+      if (options?.navigate !== false) {
+        await router.navigate({
+          to: "/draft/$draftId",
+          params: { draftId },
+          replace: options?.replace ?? false,
+        });
+      }
       return { draftId, threadId };
     })();
   };

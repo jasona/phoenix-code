@@ -6215,7 +6215,6 @@
   "7f5a37821edc1814": "Allowed",
   "86a2917f997a6e61": "Allow",
   "40baaf84b74b6875": "Could not check permissions. We'll try again automatically.",
-  "04f8f060183c14b9": "Back to inbox",
   "88c5783fe6cce532": "Review thread",
   "c4ef3261a5aa4b43": "Retry review status",
   "edb149292c71654c": "Reopen review",
@@ -12709,5 +12708,13 @@
   "27d76249d09eb69f": "Review guide ready",
   "faa3bb26abb39c93": "Review guide failed",
   "b7df38b7d8792d78": "Open guide",
-  "9e91e9a77b664e4e": "Could not start a review guide"
+  "9e91e9a77b664e4e": "Could not start a review guide",
+  "950f3c0b1dd91135": "Review status",
+  "a21b6dde037a7339": "Open thread windows",
+  "82a4930df17d2512": "Move thread window",
+  "55d7d6073979778d": "Drag to move. Use arrow keys to move, or Shift + arrow keys to resize.",
+  "b0b4fe3dff5d8f77": "Minimize thread window",
+  "d0feffaf56601340": "Restore thread window",
+  "29da41e51bf9d094": "Maximize thread window",
+  "7e407e3e353132f4": "Close thread window"
 }

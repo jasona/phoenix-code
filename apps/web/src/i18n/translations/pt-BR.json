@@ -6212,7 +6212,6 @@
   "7f5a37821edc1814": "Permitido",
   "86a2917f997a6e61": "Permitir",
   "40baaf84b74b6875": "Não foi possível verificar as permissões. Vamos tentar novamente automaticamente.",
-  "04f8f060183c14b9": "Voltar à caixa de entrada",
   "88c5783fe6cce532": "Revisar conversa",
   "c4ef3261a5aa4b43": "Tentar carregar o status da revisão novamente",
   "edb149292c71654c": "Reabrir revisão",
@@ -12700,5 +12699,13 @@
   "27d76249d09eb69f": "Guia de revisão pronto",
   "faa3bb26abb39c93": "O guia de revisão falhou",
   "b7df38b7d8792d78": "Abrir guia",
-  "9e91e9a77b664e4e": "Não foi possível iniciar um guia de revisão"
+  "9e91e9a77b664e4e": "Não foi possível iniciar um guia de revisão",
+  "950f3c0b1dd91135": "Status da revisão",
+  "a21b6dde037a7339": "Janelas de conversas abertas",
+  "82a4930df17d2512": "Mover janela da conversa",
+  "55d7d6073979778d": "Arraste para mover. Use as setas para mover ou Shift + setas para redimensionar.",
+  "b0b4fe3dff5d8f77": "Minimizar janela da conversa",
+  "d0feffaf56601340": "Restaurar janela da conversa",
+  "29da41e51bf9d094": "Maximizar janela da conversa",
+  "7e407e3e353132f4": "Fechar janela da conversa"
 }

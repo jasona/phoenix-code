@@ -698,6 +698,12 @@ function initFloatingModal(modalEl) {
 }
 
 function openNewThreadModal(projectId = "") {
+  if (window.phoenix.ui.nativeNewThreadDialog) {
+    closeSettingsPopover();
+    closeModal();
+    void window.phoenix.ui.openNewThread(projectId || undefined);
+    return;
+  }
   if (!state.snap?.projects?.length) {
     showToast(
       state.snap ? "Add a project in Phoenix first." : "Projects are still loading.",
@@ -752,7 +758,7 @@ function runPaletteItem(item) {
   if (act.type === "new-thread") openNewThreadModal(act.projectId || "");
   else if (act.type === "open-plugins") openPluginsDrawer();
   else if (act.type === "view") setView(act.view);
-  else if (act.type === "thread") selectThread(act.threadId);
+  else if (act.type === "thread") selectThread(act.threadId, { openConversation: true });
 }
 
 function setView(view) {
@@ -880,7 +886,8 @@ function nextAttention() {
   const index = items.findIndex((item) => item.threadId === state.selectedThreadId);
   const next = items[(index + 1) % items.length];
   state.inboxScope = "active";
-  if (next) selectThread(next.threadId, { tab: "activity", openDrawer: true });
+  if (next)
+    selectThread(next.threadId, { tab: "activity", openDrawer: true, openConversation: true });
 }
 
 async function controlThread(threadId, command) {
@@ -923,12 +930,14 @@ async function selectThread(threadId, opts = {}) {
     state.inspectorDiffFile = "all";
   }
   if (opts.tab) state.inspectorTab = opts.tab;
-  if (window.innerWidth < 1100) state.inspectorOpen = true;
+  const openConversation = opts.openConversation && window.phoenix.ui.nativeThreadDialog;
+  if (window.innerWidth < 1100 && !openConversation) state.inspectorOpen = true;
 
   renderActiveView();
   renderInspector(true);
+  if (openConversation) handleOpenFull(threadId);
   await loadThreadDetail(threadId, true);
-  if (opts.focusComposer && state.selectedThreadId === threadId) {
+  if (opts.focusComposer && !openConversation && state.selectedThreadId === threadId) {
     setTimeout(() => $("mc-composer-input")?.focus(), 40);
   }
 }
@@ -995,7 +1004,7 @@ async function handleCreateThread(form) {
     showToast("Thread launched", "green");
     state.etag = "";
     if (res.threadId) {
-      await selectThread(res.threadId, { tab: "activity" });
+      await selectThread(res.threadId, { tab: "activity", openConversation: true });
     }
     await pollDashboard(true);
   } catch (err) {
@@ -1099,11 +1108,16 @@ document.addEventListener("click", (e) => {
     if (act === "dismiss") void triageThread(threadId, "dismiss");
     else if (act === "diff") selectThread(threadId, { tab: "diff", openDrawer: true });
     else if (act === "reply")
-      selectThread(threadId, { tab: "activity", openDrawer: true, focusComposer: true });
+      selectThread(threadId, {
+        tab: "activity",
+        openDrawer: true,
+        focusComposer: true,
+        openConversation: true,
+      });
     else if (act === "open") {
       selectThread(threadId, { tab: "activity", openDrawer: true });
       handleOpenFull(threadId);
-    } else selectThread(threadId, { tab: "activity", openDrawer: true });
+    } else selectThread(threadId, { tab: "activity", openDrawer: true, openConversation: true });
     return;
   }
 
@@ -1151,7 +1165,7 @@ document.addEventListener("click", (e) => {
 
   const selThread = e.target.closest("[data-select-thread]");
   if (selThread) {
-    selectThread(selThread.dataset.selectThread, { openDrawer: true });
+    selectThread(selThread.dataset.selectThread, { openDrawer: true, openConversation: true });
     return;
   }
 

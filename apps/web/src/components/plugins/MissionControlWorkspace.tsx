@@ -1,15 +1,18 @@
 import { LayoutDashboardIcon, MessageSquareIcon, XIcon } from "lucide-react";
 import { useGT } from "gt-react";
+import { scopedProjectKey, scopeProjectRef } from "@t3tools/client-runtime/environment";
+import type { ScopedProjectRef } from "@t3tools/contracts";
 import { useMissionControlStore } from "../../missionControlStore";
+import { useMissionControlNewThread } from "../../hooks/useMissionControlNewThread";
+import { readLastUsedProjectKey } from "../../hooks/useHandleNewThread";
+import { useProjects } from "../../state/entities";
 import { useEnvironments } from "../../state/environments";
 import { cn } from "../../lib/utils";
 import { isElectron } from "../../env";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
 import { Button } from "../ui/button";
 import { PluginView } from "./PluginPanel";
-import { MissionControlReviewDesk } from "./MissionControlReviewDesk";
-import { scopedThreadKey } from "@t3tools/client-runtime/environment";
-import { useState } from "react";
+import { MissionControlThreadWindows } from "./MissionControlThreadWindows";
 
 export function MissionControlWorkspaceTabs() {
   const gt = useGT();
@@ -83,11 +86,23 @@ export function MissionControlWorkspaceTabs() {
 
 export function MissionControlWorkspace() {
   const gt = useGT();
-  const [reviewInstanceId, setReviewInstanceId] = useState<string | null>(null);
-  const { environmentId, active, open, reviewThreadRef, inspectThread, returnToInbox } =
-    useMissionControlStore();
+  const { environmentId, active, open, inspectThread } = useMissionControlStore();
   const { environments } = useEnvironments();
-  const showingReview = reviewThreadRef !== null && reviewInstanceId !== null;
+  const projects = useProjects();
+  const openDraft = useMissionControlNewThread();
+  const newThread = async (requested: ScopedProjectRef | null, instanceId: string) => {
+    const candidates = projects.filter(
+      (project) => project.environmentId === environmentId && project.archivedAt == null,
+    );
+    const lastUsed = readLastUsedProjectKey();
+    const project = requested
+      ? candidates.find((item) => item.id === requested.projectId)
+      : (candidates.find(
+          (item) => scopedProjectKey(scopeProjectRef(item.environmentId, item.id)) === lastUsed,
+        ) ?? candidates[0]);
+    if (!project) throw new Error(gt("Add a project to start your first thread."));
+    await openDraft(scopeProjectRef(project.environmentId, project.id), instanceId);
+  };
   if (!environmentId) return null;
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -108,30 +123,18 @@ export function MissionControlWorkspace() {
           ))}
         </div>
       )}
-      <div className={cn("min-h-0 flex-1", showingReview && "hidden")} inert={showingReview}>
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         <PluginView
           key={environmentId}
           environmentId={environmentId}
           pluginId="mission-control"
           viewId="dashboard"
-          active={active && !showingReview}
-          onInspectThread={(threadRef, instanceId) => {
-            setReviewInstanceId(instanceId);
-            inspectThread(threadRef);
-          }}
+          active={active}
+          onInspectThread={inspectThread}
+          onNewThread={newThread}
         />
+        <MissionControlThreadWindows active={active} />
       </div>
-      {reviewThreadRef && reviewInstanceId && (
-        <div className="min-h-0 flex-1">
-          <MissionControlReviewDesk
-            key={scopedThreadKey(reviewThreadRef)}
-            threadRef={reviewThreadRef}
-            instanceId={reviewInstanceId}
-            active={active}
-            onBack={returnToInbox}
-          />
-        </div>
-      )}
     </div>
   );
 }

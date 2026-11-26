@@ -192,6 +192,8 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 vi.mock("react-dom", () => ({ flushSync: (update: () => void) => update() }));
 vi.mock("react", () => ({
+  createContext: <T>(value: T) => ({ value }),
+  use: <T>(context: { value: T }) => context.value,
   useCallback: <T>(callback: T) => callback,
   useMemo: <T>(factory: () => T) => factory(),
 }));
@@ -279,6 +281,45 @@ describe.each([
     },
   ],
 ])("useNewThreadHandler with a %s draft", (_, draft) => {
+  it("prepares a native draft without changing the workspace route", async () => {
+    testState.reset(draft, { envMode: null, startFromOrigin: false });
+    const projectRef = {
+      environmentId: "environment-ssh",
+      projectId: "project-remote",
+    } as never;
+
+    const opened = await useNewThreadHandler()(projectRef, {
+      navigate: false,
+      prompt: "Investigate the failing build.",
+    });
+
+    expect(opened).toEqual({
+      draftId: draft?.draftId ?? "draft-delayed",
+      threadId: draft?.threadId ?? "thread-delayed",
+    });
+    expect(testState.router.navigate).not.toHaveBeenCalled();
+    expect(testState.router.state.location.href).toBe("/");
+    expect(testState.draftStore.setLogicalProjectDraftThreadId).toHaveBeenCalledWith(
+      "remote-project",
+      projectRef,
+      opened?.draftId,
+      expect.objectContaining({ envMode: "local", runtimeMode: "full-access" }),
+    );
+    expect(testState.draftStore.setPrompt).toHaveBeenCalledWith(
+      opened?.draftId,
+      "Investigate the failing build.",
+    );
+
+    const pendingDefault = readPendingWorkspaceDefault(opened!.draftId);
+    expect(pendingDefault).not.toBeNull();
+    testState.completeProjectFileRead({ defaultThreadEnvMode: "worktree" });
+    await pendingDefault;
+    expect(testState.draftStore.setDraftThreadContext).toHaveBeenCalledWith(opened?.draftId, {
+      envMode: "worktree",
+      startFromOrigin: false,
+    });
+  });
+
   it("opens the draft before the project file is read, then applies its workspace default", async () => {
     testState.reset(draft, { envMode: null, startFromOrigin: false });
     const opened = await useNewThreadHandler()({

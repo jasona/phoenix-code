@@ -6211,7 +6211,6 @@
   "7f5a37821edc1814": "Erlaubt",
   "86a2917f997a6e61": "Erlauben",
   "40baaf84b74b6875": "Berechtigungen konnten nicht geprüft werden. Wir versuchen es automatisch erneut.",
-  "04f8f060183c14b9": "Zurück zum Posteingang",
   "88c5783fe6cce532": "Thread prüfen",
   "c4ef3261a5aa4b43": "Prüfstatus erneut laden",
   "edb149292c71654c": "Prüfung erneut öffnen",
@@ -12700,5 +12699,13 @@
   "27d76249d09eb69f": "Review-Leitfaden bereit",
   "faa3bb26abb39c93": "Review-Leitfaden fehlgeschlagen",
   "b7df38b7d8792d78": "Leitfaden öffnen",
-  "9e91e9a77b664e4e": "Review-Leitfaden konnte nicht gestartet werden"
+  "9e91e9a77b664e4e": "Review-Leitfaden konnte nicht gestartet werden",
+  "950f3c0b1dd91135": "Prüfstatus",
+  "a21b6dde037a7339": "Offene Thread-Fenster",
+  "82a4930df17d2512": "Thread-Fenster verschieben",
+  "55d7d6073979778d": "Zum Verschieben ziehen oder die Pfeiltasten verwenden. Mit Umschalt + Pfeiltasten die Größe ändern.",
+  "b0b4fe3dff5d8f77": "Thread-Fenster minimieren",
+  "d0feffaf56601340": "Thread-Fenster wiederherstellen",
+  "29da41e51bf9d094": "Thread-Fenster maximieren",
+  "7e407e3e353132f4": "Thread-Fenster schließen"
 }
