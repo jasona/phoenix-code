@@ -382,8 +382,10 @@ function MissionControlThreadWindow({
           event.target instanceof Element &&
           event.target.closest('[role="dialog"]') === event.currentTarget
         ) {
+          // Closing (not minimizing) keeps the dock clear while hopping between threads;
+          // new-thread drafts survive in the draft store and reopen from the board.
           event.stopPropagation();
-          minimize();
+          close();
         }
       }}
       className={cn(
