@@ -66,6 +66,96 @@ export interface MissionControlSubagentsSummary {
   readonly completedAt: string | null;
 }
 
+export const MISSION_CONTROL_SUBAGENTS_RECENT_LIMIT = 4;
+const MISSION_CONTROL_SUBAGENTS_FILTER_MIN_TOTAL = 7;
+const SMALL_IDLE_THREAD_LIMIT = 5;
+const SMALL_SETTLED_WITH_ACTIVE_LIMIT = 2;
+
+export interface MissionControlSubagentsPartition {
+  readonly query: string;
+  readonly isFiltering: boolean;
+  readonly filteredEntries: ReadonlyArray<MissionControlSubagentEntry>;
+  readonly activeEntries: ReadonlyArray<MissionControlSubagentEntry>;
+  readonly issueEntries: ReadonlyArray<MissionControlSubagentEntry>;
+  readonly recentSettledEntries: ReadonlyArray<MissionControlSubagentEntry>;
+  readonly archivedSettledEntries: ReadonlyArray<MissionControlSubagentEntry>;
+  readonly showFilter: boolean;
+}
+
+function matchesSubagentQuery(entry: MissionControlSubagentEntry, needle: string): boolean {
+  if (entry.title?.toLowerCase().includes(needle)) return true;
+  if (entry.detail?.toLowerCase().includes(needle)) return true;
+  if (entry.model?.toLowerCase().includes(needle)) return true;
+  if (entry.status.toLowerCase().includes(needle)) return true;
+  if (entry.remoteChild?.label.toLowerCase().includes(needle)) return true;
+  return false;
+}
+
+export function partitionMissionControlSubagents(
+  summary: MissionControlSubagentsSummary,
+  rawQuery = "",
+): MissionControlSubagentsPartition {
+  const query = rawQuery.trim();
+  const showFilter = summary.total >= MISSION_CONTROL_SUBAGENTS_FILTER_MIN_TOTAL;
+
+  if (query.length > 0) {
+    const needle = query.toLowerCase();
+    const filteredEntries = summary.subagents.filter((entry) =>
+      matchesSubagentQuery(entry, needle),
+    );
+    return {
+      query,
+      isFiltering: true,
+      filteredEntries,
+      activeEntries: [],
+      issueEntries: [],
+      recentSettledEntries: [],
+      archivedSettledEntries: [],
+      showFilter,
+    };
+  }
+
+  const activeEntries: MissionControlSubagentEntry[] = [];
+  const issueEntries: MissionControlSubagentEntry[] = [];
+  const settledEntries: MissionControlSubagentEntry[] = [];
+
+  for (const entry of summary.subagents) {
+    if (entry.isActive) activeEntries.push(entry);
+    else if (entry.isFailed || entry.isStopped) issueEntries.push(entry);
+    else settledEntries.push(entry);
+  }
+
+  let recentSettledEntries: ReadonlyArray<MissionControlSubagentEntry>;
+  let archivedSettledEntries: ReadonlyArray<MissionControlSubagentEntry>;
+
+  if (activeEntries.length > 0) {
+    if (settledEntries.length <= SMALL_SETTLED_WITH_ACTIVE_LIMIT) {
+      recentSettledEntries = settledEntries;
+      archivedSettledEntries = [];
+    } else {
+      recentSettledEntries = [];
+      archivedSettledEntries = settledEntries;
+    }
+  } else if (settledEntries.length <= SMALL_IDLE_THREAD_LIMIT) {
+    recentSettledEntries = settledEntries;
+    archivedSettledEntries = [];
+  } else {
+    recentSettledEntries = settledEntries.slice(0, MISSION_CONTROL_SUBAGENTS_RECENT_LIMIT);
+    archivedSettledEntries = settledEntries.slice(MISSION_CONTROL_SUBAGENTS_RECENT_LIMIT);
+  }
+
+  return {
+    query: "",
+    isFiltering: false,
+    filteredEntries: [],
+    activeEntries,
+    issueEntries,
+    recentSettledEntries,
+    archivedSettledEntries,
+    showFilter,
+  };
+}
+
 const ACTIVE_RUN_STATUSES = new Set<OrchestrationV2RunStatus>([
   "preparing",
   "queued",
