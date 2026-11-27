@@ -111,6 +111,7 @@ export const ExecutionEnvironmentCapabilities = Schema.Struct({
   storageCleanup: Schema.optionalKey(Schema.Boolean),
   pluginViews: Schema.optionalKey(Schema.Boolean),
   pluginHostVersion: Schema.optionalKey(Schema.Literal(1)),
+  swarmBoard: Schema.optionalKey(Schema.Boolean),
   storageCleanupRun: Schema.optionalKey(Schema.Boolean),
   databaseStorage: Schema.optionalKey(Schema.Boolean),
   /** Serves `server.checkSecretSource`; hide the secret check where it is absent. */

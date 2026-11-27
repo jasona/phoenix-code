@@ -241,6 +241,7 @@ export const make = Effect.gen(function* () {
       storageCleanup: true,
       pluginViews: true,
       pluginHostVersion: 1,
+      swarmBoard: true,
       storageCleanupRun: true,
       databaseStorage: true,
       secretSourceCheck: true,

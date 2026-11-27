@@ -34,6 +34,9 @@ const PreviewPanel = lazy(() =>
   import("../preview/PreviewPanel").then((module) => ({ default: module.PreviewPanel })),
 );
 const DiffPanel = lazy(() => import("../DiffPanel"));
+const SwarmBoardPanel = lazy(() =>
+  import("../swarm/SwarmBoardPanel").then((module) => ({ default: module.SwarmBoardPanel })),
+);
 const DevicePanel = lazy(() =>
   import("../device/DevicePanel").then((module) => ({ default: module.DevicePanel })),
 );
@@ -85,6 +88,7 @@ export function RightPanelSurfaceContent(props: {
   readonly terminal: RightPanelTerminalProps;
   readonly pullRequest: RightPanelPullRequestProps;
   readonly issuesSupported: boolean;
+  readonly swarmSupported: boolean;
   readonly files: RightPanelFileProps;
   readonly sideChatParentPanel: SideChatParentPanel;
 }) {
@@ -136,6 +140,17 @@ export function RightPanelSurfaceContent(props: {
             composerDraftTarget={props.composerDraftTarget}
             workspaceMutationId={props.workspaceRevision}
             visible={visible}
+          />
+        </Suspense>
+      );
+    case "swarm":
+      return (
+        <Suspense fallback={null}>
+          <SwarmBoardPanel
+            key={scopedThreadKey(threadRef)}
+            threadRef={threadRef}
+            visible={visible && props.activeSurfaceId === surface.id}
+            supported={props.swarmSupported}
           />
         </Suspense>
       );

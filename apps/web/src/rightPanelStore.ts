@@ -25,6 +25,7 @@ const RIGHT_PANEL_KINDS = [
   "plugins",
   "plugin",
   "diff",
+  "swarm",
   "files",
   "file",
   "preview",
@@ -62,6 +63,7 @@ export type RightPanelSurface =
       splitDirection?: "horizontal" | "vertical";
     }
   | { id: "diff"; kind: "diff" }
+  | { id: "swarm"; kind: "swarm" }
   | {
       id: "files";
       kind: "files";
@@ -329,6 +331,8 @@ const singletonSurface = (
       return { id: "plugins", kind };
     case "diff":
       return { id: "diff", kind };
+    case "swarm":
+      return { id: "swarm", kind };
     case "files":
       return { id: "files", kind };
     case "pull-requests":

@@ -62,6 +62,10 @@ import {
   PluginViewInput,
   PluginError,
 } from "./plugins.ts";
+import {
+  OrchestrationV2GetSwarmBoardError,
+  OrchestrationV2GetSwarmMemberTranscriptError,
+} from "./swarm.ts";
 import * as Schema from "effect/Schema";
 import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
@@ -1838,11 +1842,15 @@ const WsPluginsInstallRpc = Rpc.make(WS_METHODS.pluginsInstall, {
   error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
 });
 const WsPluginsWatchRpc = Rpc.make(WS_METHODS.pluginsWatch, {
-  payload: PluginViewInput, success: Schema.Unknown, stream: true,
+  payload: PluginViewInput,
+  success: Schema.Unknown,
+  stream: true,
   error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
 });
 const WsPluginsSubscribeRpc = Rpc.make(WS_METHODS.pluginsSubscribe, {
-  payload: Schema.Struct({ threadId: ThreadId }), success: PluginLaunch, stream: true,
+  payload: Schema.Struct({ threadId: ThreadId }),
+  success: PluginLaunch,
+  stream: true,
   error: EnvironmentAuthorizationError,
 });
 const WsPluginsHostRpc = Rpc.make(WS_METHODS.pluginsHost, {
@@ -2307,6 +2315,24 @@ const WsOrchestrationV2GetNativeChildWorkRpc = Rpc.make(
     payload: OrchestrationV2RpcSchemas.getNativeChildWork.input,
     success: OrchestrationV2RpcSchemas.getNativeChildWork.output,
     error: Schema.Union([OrchestrationV2GetNativeChildWorkError, EnvironmentAuthorizationError]),
+  },
+);
+
+const WsOrchestrationV2GetSwarmBoardRpc = Rpc.make(ORCHESTRATION_V2_WS_METHODS.getSwarmBoard, {
+  payload: OrchestrationV2RpcSchemas.getSwarmBoard.input,
+  success: OrchestrationV2RpcSchemas.getSwarmBoard.output,
+  error: Schema.Union([OrchestrationV2GetSwarmBoardError, EnvironmentAuthorizationError]),
+});
+
+const WsOrchestrationV2GetSwarmMemberTranscriptRpc = Rpc.make(
+  ORCHESTRATION_V2_WS_METHODS.getSwarmMemberTranscript,
+  {
+    payload: OrchestrationV2RpcSchemas.getSwarmMemberTranscript.input,
+    success: OrchestrationV2RpcSchemas.getSwarmMemberTranscript.output,
+    error: Schema.Union([
+      OrchestrationV2GetSwarmMemberTranscriptError,
+      EnvironmentAuthorizationError,
+    ]),
   },
 );
 
@@ -2783,6 +2809,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2DispatchCommandRpc,
   WsOrchestrationV2GetWorkflowScriptRpc,
   WsOrchestrationV2GetNativeChildWorkRpc,
+  WsOrchestrationV2GetSwarmBoardRpc,
+  WsOrchestrationV2GetSwarmMemberTranscriptRpc,
   WsOrchestrationV2StopWorkflowRpc,
   WsOrchestrationV2ForceStopThreadRpc,
   WsOrchestrationV2GetTurnItemRpc,

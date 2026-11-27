@@ -75,6 +75,7 @@ import {
   MessageSquareDashedIcon,
   LinkIcon,
   MessageSquareIcon,
+  NetworkIcon,
   PaletteIcon,
   RotateCcwIcon,
   SettingsIcon,
@@ -1566,6 +1567,20 @@ function OpenCommandPaletteDialog(props: {
       icon: <LinkIcon className={ITEM_ICON_CLASS} />,
       run: async () => {
         useRightPanelStore.getState().open(threadRef, "plugins");
+      },
+    });
+  }
+  if (activeThread !== null && activeThreadServerConfig?.environment.capabilities.swarmBoard) {
+    const threadRef = scopeThreadRef(activeThread.environmentId, activeThread.id);
+    actionItems.push({
+      kind: "action",
+      value: "action:toggle-swarm",
+      searchTerms: ["swarm", "board", "agents", "workers", "antigravity"],
+      title: gt("Toggle Swarm board"),
+      icon: <NetworkIcon className={ITEM_ICON_CLASS} />,
+      shortcutCommand: "swarm.toggle",
+      run: async () => {
+        useRightPanelStore.getState().toggle(threadRef, "swarm");
       },
     });
   }
