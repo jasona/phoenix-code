@@ -113,6 +113,16 @@ export function useRightPanelActions(input: RightPanelActionsInput) {
     }
   };
   const onToggleDiffStable = useStableCallback(onToggleDiff);
+  const onToggleSwarm = () => {
+    if (!isServerThread || !activeThreadRef) return;
+    useRightPanelStore.getState().toggle(activeThreadRef, "swarm");
+  };
+  const onToggleSwarmStable = useStableCallback(onToggleSwarm);
+  const addSwarmSurface = () => {
+    if (!activeThreadRef || !isServerThread) return;
+    useRightPanelStore.getState().open(activeThreadRef, "swarm");
+  };
+  const addSwarmSurfaceStable = useStableCallback(addSwarmSurface);
   const createBrowserSurface = (profileId?: string, duplicateFrom?: PreviewSessionSnapshot) => {
     if (!activeThreadRef || !canOperatePreview) return;
     void addBrowserSurface({
@@ -335,6 +345,7 @@ export function useRightPanelActions(input: RightPanelActionsInput) {
       if (!event.repeat) closeRightPanelSurface(activeRightPanelSurface);
     },
     "diff.toggle": () => onToggleDiff(),
+    "swarm.toggle": () => onToggleSwarm(),
   } satisfies ChatShortcutCommands;
 
   return {
@@ -345,6 +356,7 @@ export function useRightPanelActions(input: RightPanelActionsInput) {
     addFilesSurfaceStable,
     addPullRequestSurfaceStable,
     addPullRequestsSurfaceStable,
+    addSwarmSurfaceStable,
     closePreviewPanelStable,
     copyRightPanelFilePathStable,
     createBrowserSurface,
@@ -353,6 +365,7 @@ export function useRightPanelActions(input: RightPanelActionsInput) {
     moveRightPanelSurfaceStable,
     onOpenToolDiffStable,
     onToggleDiffStable,
+    onToggleSwarmStable,
     openChangesFromThreadPanelStable,
     openFileSurfaceStable,
     toggleRightPanelMaximizedStable,

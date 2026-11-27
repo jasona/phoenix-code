@@ -51,6 +51,7 @@ import {
   Files,
   Globe2,
   MessagesSquare,
+  Network,
   Plus,
   TerminalSquare,
   Volume2Icon,
@@ -155,6 +156,7 @@ export interface RightPanelTabsProps {
   onAddPlugins?: (() => void) | undefined;
   onAddTerminal: () => void;
   onAddDiff: () => void;
+  onAddSwarm?: (() => void) | undefined;
   onAddFiles: () => void;
   onAddPullRequest: () => void;
   onAddPullRequests: () => void;
@@ -164,6 +166,7 @@ export interface RightPanelTabsProps {
   browserAvailable: boolean;
   terminalAvailable: boolean;
   diffAvailable: boolean;
+  swarmAvailable?: boolean;
   filesAvailable: boolean;
   pullRequestAvailable: boolean;
   pullRequestsAvailable: boolean;
@@ -194,6 +197,7 @@ const SURFACE_DISABLED_REASONS = {
   terminal: msg("Terminal surfaces are only available from a project thread."),
   files: msg("Files are only available when a project is open."),
   diff: msg("Diff is only available for server threads in Git repositories."),
+  swarm: msg("Swarm board is available for server threads."),
   pullRequest: msg("This thread's branch has no pull request yet."),
   pullRequests: msg("This thread has no linked items."),
   device: msg("Devices are only available from a thread."),
@@ -219,6 +223,7 @@ const SURFACE_UNAVAILABLE_HINTS = {
   terminal: msg("Available when a project is open."),
   files: msg("Available when a project is open."),
   diff: msg("Available for Git repositories."),
+  swarm: msg("Available for server threads."),
   pullRequest: msg("No pull request on this branch yet."),
   pullRequests: msg("No linked items available."),
   device: msg("Available from a thread."),
@@ -342,6 +347,7 @@ function RightPanelEmptyState(props: {
   browserProfiles: ReadonlyArray<{ readonly id: string; readonly name: string }>;
   onAddTerminal: () => void;
   onAddDiff: () => void;
+  onAddSwarm?: (() => void) | undefined;
   onAddFiles: () => void;
   onAddPullRequest: () => void;
   onAddPullRequests: () => void;
@@ -351,6 +357,7 @@ function RightPanelEmptyState(props: {
   browserAvailable: boolean;
   terminalAvailable: boolean;
   diffAvailable: boolean;
+  swarmAvailable?: boolean;
   filesAvailable: boolean;
   pullRequestAvailable: boolean;
   pullRequestsAvailable: boolean;
@@ -407,6 +414,18 @@ function RightPanelEmptyState(props: {
       disabledReason: messages(SURFACE_UNAVAILABLE_HINTS.diff),
       onClick: props.onAddDiff,
     },
+    ...(props.onAddSwarm
+      ? [
+          {
+            label: msg("Swarm"),
+            icon: Network,
+            shortcut: "W",
+            available: props.swarmAvailable === true,
+            disabledReason: messages(SURFACE_UNAVAILABLE_HINTS.swarm),
+            onClick: props.onAddSwarm,
+          },
+        ]
+      : []),
     {
       label: msg("Pull request"),
       icon: PullRequestGlyph.pullRequest,
@@ -621,6 +640,8 @@ function surfaceTitle(
       return surface.title;
     case "diff":
       return resolve(msg("Diff"));
+    case "swarm":
+      return resolve(msg("Swarm"));
     case "files":
       return resolve(msg("Files"));
     case "file":
@@ -717,6 +738,8 @@ function SurfaceIcon({
       return <Globe2 className="size-3 shrink-0" />;
     case "diff":
       return <FileDiff className="size-3 shrink-0" />;
+    case "swarm":
+      return <Network className="size-3 shrink-0" />;
     case "files":
       return <Files className="size-3 shrink-0" />;
     case "file":
@@ -1269,6 +1292,18 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
       disabledReason: messages(SURFACE_DISABLED_REASONS.diff),
       onClick: props.onAddDiff,
     },
+    ...(props.onAddSwarm
+      ? [
+          {
+            label: msg("Swarm"),
+            icon: Network,
+            shortcut: "W",
+            available: props.swarmAvailable === true,
+            disabledReason: messages(SURFACE_DISABLED_REASONS.swarm),
+            onClick: props.onAddSwarm,
+          },
+        ]
+      : []),
     {
       label: msg("Pull request"),
       icon: PullRequestGlyph.pullRequest,
@@ -1727,6 +1762,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
             browserProfiles={browserProfiles}
             onAddTerminal={props.onAddTerminal}
             onAddDiff={props.onAddDiff}
+            onAddSwarm={props.onAddSwarm}
             onAddFiles={props.onAddFiles}
             onAddPullRequest={props.onAddPullRequest}
             onAddPullRequests={props.onAddPullRequests}
@@ -1735,6 +1771,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
             browserAvailable={props.browserAvailable}
             terminalAvailable={props.terminalAvailable}
             diffAvailable={props.diffAvailable}
+            swarmAvailable={props.swarmAvailable === true}
             filesAvailable={props.filesAvailable}
             pullRequestAvailable={props.pullRequestAvailable}
             pullRequestsAvailable={props.pullRequestsAvailable}

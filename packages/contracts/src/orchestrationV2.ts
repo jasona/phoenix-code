@@ -58,6 +58,12 @@ import {
   OrchestrationGetTurnDiffResult,
 } from "./checkpointDiff.ts";
 import { ModelSelection } from "./modelSelection.ts";
+import {
+  OrchestrationV2GetSwarmBoardInput,
+  OrchestrationV2GetSwarmBoardResult,
+  OrchestrationV2GetSwarmMemberTranscriptInput,
+  OrchestrationV2GetSwarmMemberTranscriptResult,
+} from "./swarm.ts";
 import { ThreadIssueKey, ThreadIssueLink, ThreadIssueLinkSource } from "./issue.ts";
 import {
   ThreadLinkedPullRequest,
@@ -4067,6 +4073,8 @@ export const ORCHESTRATION_V2_WS_METHODS = {
   getThreadProjection: "orchestration.getThreadProjection",
   getWorkflowScript: "orchestration.getWorkflowScript",
   getNativeChildWork: "orchestration.getNativeChildWork",
+  getSwarmBoard: "orchestration.getSwarmBoard",
+  getSwarmMemberTranscript: "orchestration.getSwarmMemberTranscript",
   stopWorkflow: "orchestration.stopWorkflow",
   forceStopThread: "orchestration.forceStopThread",
   getTurnItem: "orchestration.getTurnItem",
@@ -4780,6 +4788,14 @@ export const OrchestrationV2RpcSchemas = {
   getNativeChildWork: {
     input: OrchestrationV2GetNativeChildWorkInput,
     output: OrchestrationV2GetNativeChildWorkResult,
+  },
+  getSwarmBoard: {
+    input: OrchestrationV2GetSwarmBoardInput,
+    output: OrchestrationV2GetSwarmBoardResult,
+  },
+  getSwarmMemberTranscript: {
+    input: OrchestrationV2GetSwarmMemberTranscriptInput,
+    output: OrchestrationV2GetSwarmMemberTranscriptResult,
   },
   getTurnItem: {
     input: OrchestrationV2GetTurnItemInput,

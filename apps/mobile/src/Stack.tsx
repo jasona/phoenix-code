@@ -78,6 +78,7 @@ import {
   ThreadRouteScreen,
 } from "./features/threads/ThreadRouteScreen";
 import { PluginsScreen } from "./features/threads/PluginsScreen";
+import { SwarmBoardScreen } from "./features/threads/SwarmBoardScreen";
 import { McpAppFullscreenScreen } from "./features/threads/McpAppFullscreenScreen";
 import { ConnectionsRouteScreen } from "./features/connection/ConnectionsRouteScreen";
 import { ConnectionsNewRouteScreen } from "./features/connection/ConnectionsNewRouteScreen";
@@ -776,7 +777,14 @@ const RootStackConfig = createWorkspaceStackNavigator({
       linking: `${THREAD_LINKING_PREFIX}/files/:path*`,
       options: pageRoute(),
     }),
-    ThreadPlugins: createNativeStackScreen({ screen: PluginsScreen, options: modalRoute({ header: "solid" }) }),
+    ThreadPlugins: createNativeStackScreen({
+      screen: PluginsScreen,
+      options: modalRoute({ header: "solid" }),
+    }),
+    ThreadSwarm: createNativeStackScreen({
+      screen: SwarmBoardScreen,
+      options: modalRoute({ header: "solid" }),
+    }),
     ThreadMcpApp: createNativeStackScreen({
       screen: McpAppFullscreenScreen,
       linking: `${THREAD_LINKING_PREFIX}/apps/:itemId`,

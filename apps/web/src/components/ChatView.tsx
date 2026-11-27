@@ -2516,6 +2516,7 @@ export default function ChatView(props: ChatViewProps) {
     addFilesSurfaceStable,
     addPullRequestSurfaceStable,
     addPullRequestsSurfaceStable,
+    addSwarmSurfaceStable,
     closePreviewPanelStable,
     copyRightPanelFilePathStable,
     createBrowserSurface,
@@ -3436,6 +3437,7 @@ export default function ChatView(props: ChatViewProps) {
             : undefined,
       }}
       issuesSupported={serverConfig?.environment.capabilities.issues === true}
+      swarmSupported={serverConfig?.environment.capabilities.swarmBoard === true}
       files={{
         projectId: activeProject?.id,
         projectName: activeProject?.title ?? null,
@@ -4224,6 +4226,11 @@ export default function ChatView(props: ChatViewProps) {
           }
           onAddTerminal={addTerminalSurfaceStable}
           onAddDiff={addDiffSurfaceStable}
+          onAddSwarm={
+            serverConfig?.environment.capabilities.swarmBoard === true
+              ? addSwarmSurfaceStable
+              : undefined
+          }
           onAddFiles={addFilesSurfaceStable}
           onAddPullRequest={addPullRequestSurfaceStable}
           onAddPullRequests={addPullRequestsSurfaceStable}
@@ -4232,6 +4239,7 @@ export default function ChatView(props: ChatViewProps) {
           browserAvailable={canOperatePreview && browserAvailable}
           terminalAvailable={activeProject !== null && canOperateTerminal}
           diffAvailable={isServerThread && diffAvailable}
+          swarmAvailable={isServerThread}
           filesAvailable={activeProject !== null}
           pullRequestAvailable={pullRequestSurfaceAvailable}
           pullRequestsAvailable={linkedItemsSurfaceAvailable}

@@ -200,6 +200,23 @@ export function createOrchestrationEnvironmentAtoms<R, E>(
       staleTimeMs: 0,
       idleTtlMs: 0,
     }),
+    // Mounted only while a swarm board panel or sheet is open; etag polling handles live refreshes.
+    swarmBoard: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:orchestration:swarm-board",
+      tag: ORCHESTRATION_V2_WS_METHODS.getSwarmBoard,
+      staleTimeMs: 0,
+      idleTtlMs: 0,
+    }),
+    swarmBoardRead: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:orchestration:swarm-board-read",
+      tag: ORCHESTRATION_V2_WS_METHODS.getSwarmBoard,
+    }),
+    swarmMemberTranscript: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:orchestration:swarm-member-transcript",
+      tag: ORCHESTRATION_V2_WS_METHODS.getSwarmMemberTranscript,
+      staleTimeMs: 0,
+      idleTtlMs: 0,
+    }),
     stopWorkflow: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:orchestration:stop-workflow",
       tag: ORCHESTRATION_V2_WS_METHODS.stopWorkflow,

@@ -69,6 +69,7 @@ const isClosedViewEntry = (entry: unknown): entry is ClosedViewEntry => {
       return decodePluginSurface(surface) !== null;
     case "plugins":
     case "diff":
+    case "swarm":
     case "files":
     case "pull-requests":
       return surface.id === surface.kind;
