@@ -944,7 +944,10 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
           BUBBLE_CHIP_CLASS_NAME,
           userMessage.attribution === "guest"
             ? guestBubbleClassName(false)
-            : !mediaOnly && !fileCardsOnly && !audioOnly && "bg-message",
+            : !mediaOnly &&
+                !fileCardsOnly &&
+                !audioOnly &&
+                "border border-border/65 bg-message shadow-xs dark:border-foreground/10 dark:inset-shadow-control-highlight",
           !folded && !mediaOnly && !fileCardsOnly && !audioOnly && "p-3",
           folded && expanded && "w-full",
         )}

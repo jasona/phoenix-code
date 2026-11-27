@@ -16,11 +16,29 @@
   <path d="M-60 293C95 220 214 304 362 256S559 191 707 257" stroke="url(#veil)" stroke-width="146" fill="none" opacity="1" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M-60 306C113 252 223 298 367 272S553 242 707 280" stroke="url(#silk)" stroke-width="86" fill="none" opacity="1" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M-60 266C113 212 223 258 367 232S553 202 707 240" stroke="#F5F5F5" stroke-width="0.8" fill="none" opacity="0.42" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Phoenix three-bar mark from assets/prod/app-icon.icon/Assets/text.svg -->
-  <svg x="32" y="23" width="24" height="24" viewBox="0 0 128 128">
-    <path d="M20.05 60.05L60.05 20.05L69.95 29.95L29.95 69.95Z" fill="#303034"/>
-    <path d="M24.7 92.7L92.7 24.7L103.3 35.3L35.3 103.3Z" fill="#C84614"/>
-    <path d="M58.05 98.05L98.05 58.05L107.95 67.95L67.95 107.95Z" fill="#635E57"/>
+  <!-- Phoenix Rising Plume mark from assets/prod/app-icon.icon/Assets/text.svg -->
+  <svg x="32" y="21" width="28" height="28" viewBox="0 0 128 128">
+    <defs>
+      <linearGradient id="dmg-rp-center" x1="64" y1="18" x2="64" y2="87" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#F59E0B"/>
+        <stop offset="100%" stop-color="#EA580C"/>
+      </linearGradient>
+      <linearGradient id="dmg-rp-inner" x1="64" y1="29" x2="64" y2="93" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#EA580C"/>
+        <stop offset="100%" stop-color="#B91C1C"/>
+      </linearGradient>
+      <linearGradient id="dmg-rp-outer" x1="64" y1="48" x2="64" y2="98" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#CF2F14"/>
+        <stop offset="100%" stop-color="#7A120D"/>
+      </linearGradient>
+    </defs>
+    <path fill-rule="evenodd" fill="url(#dmg-rp-outer)" d="M57.2 97.6 C49.4 87.2 37.8 83.2 28.4 76.2 C19.6 69.6 16.0 58.6 18.6 47.6 C20.8 56.0 27.6 61.6 36.8 65.2 C47.2 69.2 54.4 78.6 58.0 95.6 C58.2 96.6 57.7 97.4 57.2 97.6 Z M54.0 91.6 C47.8 82.8 39.2 77.6 30.2 72.2 C38.8 79.4 46.6 84.6 52.8 92.8 C53.4 93.4 54.4 92.4 54.0 91.6 Z"/>
+    <path fill-rule="evenodd" fill="url(#dmg-rp-outer)" d="M70.8 97.6 C78.6 87.2 90.2 83.2 99.6 76.2 C108.4 69.6 112.0 58.6 109.4 47.6 C107.2 56.0 100.4 61.6 91.2 65.2 C80.8 69.2 73.6 78.6 70.0 95.6 C69.8 96.6 70.3 97.4 70.8 97.6 Z M74.0 91.6 C80.2 82.8 88.8 77.6 97.8 72.2 C89.2 79.4 81.4 84.6 75.2 92.8 C74.6 93.4 73.6 92.4 74.0 91.6 Z"/>
+    <path fill-rule="evenodd" fill="url(#dmg-rp-inner)" d="M59.2 90.6 C53.6 77.6 43.2 67.2 37.8 55.2 C33.6 45.8 35.0 35.6 40.8 28.4 C39.8 36.6 44.2 43.8 50.2 50.4 C56.8 57.6 60.8 68.8 60.4 89.2 C60.3 90.2 59.6 91.0 59.2 90.6 Z M57.0 82.8 C53.4 71.8 47.2 62.6 41.6 53.6 C46.4 63.8 51.8 72.6 55.6 83.8 C56.0 84.6 57.3 83.8 57.0 82.8 Z"/>
+    <path fill-rule="evenodd" fill="url(#dmg-rp-inner)" d="M68.8 90.6 C74.4 77.6 84.8 67.2 90.2 55.2 C94.4 45.8 93.0 35.6 87.2 28.4 C88.2 36.6 83.8 43.8 77.8 50.4 C71.2 57.6 67.2 68.8 67.6 89.2 C67.7 90.2 68.4 91.0 68.8 90.6 Z M71.0 82.8 C74.6 71.8 80.8 62.6 86.4 53.6 C81.6 63.8 76.2 72.6 72.4 83.8 C72.0 84.6 70.7 83.8 71.0 82.8 Z"/>
+    <path fill="url(#dmg-rp-center)" d="M64 17.5 C66.4 26.8 74.2 35.2 74.2 46.8 C74.2 57.8 66.8 67.2 64.5 85.8 C64.4 86.8 63.6 86.8 63.5 85.8 C61.2 67.2 53.8 57.8 53.8 46.8 C53.8 35.2 61.6 26.8 64 17.5 Z"/>
+    <path fill="#EA580C" d="M64 88.2 C64.7 91.0 65.5 92.1 67.8 93.0 C65.5 93.9 64.7 95.0 64 97.8 C63.3 95.0 62.5 93.9 60.2 93.0 C62.5 92.1 63.3 91.0 64 88.2 Z"/>
+    <path fill="#58534E" d="M64 100.6 L58.4 106.8 L64 113.0 L69.6 106.8 Z"/>
   </svg>
   <text x="320" y="104" fill="#303034" font-family="Helvetica" font-size="23" font-weight="700" text-anchor="middle">Drag Phoenix into Applications.</text>
   <path d="M270 204Q320 179 370 204M358 190L370 204L351 209" stroke="#505057" stroke-width="2.2" fill="none" opacity="1" stroke-linecap="round" stroke-linejoin="round"/>

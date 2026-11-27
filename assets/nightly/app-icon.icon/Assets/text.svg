@@ -1,5 +1,43 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M64 16 L74 43 L70 46.5 L70 96.5 L64 111 L58 96.5 L58 46.5 L54 43 Z" fill="#E85D26"/>
-  <path d="M51 52 L19 20 L21 35 L40 54 L23 43 L27 56 L42 70 L30 63 L37 77 L51 92 Z" fill="#F0EDE6"/>
-  <path d="M77 52 L109 20 L107 35 L88 54 L105 43 L101 56 L86 70 L98 63 L91 77 L77 92 Z" fill="#F0EDE6"/>
+  <defs>
+    <linearGradient id="rp-center" x1="64" y1="18" x2="64" y2="87" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFDF0"/>
+      <stop offset="28%" stop-color="#FEF08A"/>
+      <stop offset="68%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </linearGradient>
+    <linearGradient id="rp-inner" x1="64" y1="29" x2="64" y2="93" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDBA74"/>
+      <stop offset="24%" stop-color="#FB923C"/>
+      <stop offset="64%" stop-color="#EA580C"/>
+      <stop offset="100%" stop-color="#B91C1C"/>
+    </linearGradient>
+    <linearGradient id="rp-outer" x1="64" y1="48" x2="64" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F05218"/>
+      <stop offset="38%" stop-color="#CF2F14"/>
+      <stop offset="80%" stop-color="#A51B10"/>
+      <stop offset="100%" stop-color="#7A120D"/>
+    </linearGradient>
+    <linearGradient id="rp-spark" x1="64" y1="88" x2="64" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFBEB"/>
+      <stop offset="50%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="rp-ash-hi" x1="59" y1="101" x2="64" y2="113" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A8A29E"/>
+      <stop offset="100%" stop-color="#78716C"/>
+    </linearGradient>
+    <linearGradient id="rp-ash-lo" x1="64" y1="101" x2="69" y2="113" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#78716C"/>
+      <stop offset="100%" stop-color="#57534E"/>
+    </linearGradient>
+  </defs>
+  <path fill-rule="evenodd" fill="url(#rp-outer)" d="M57.2 97.6 C49.4 87.2 37.8 83.2 28.4 76.2 C19.6 69.6 16.0 58.6 18.6 47.6 C20.8 56.0 27.6 61.6 36.8 65.2 C47.2 69.2 54.4 78.6 58.0 95.6 C58.2 96.6 57.7 97.4 57.2 97.6 Z M54.0 91.6 C47.8 82.8 39.2 77.6 30.2 72.2 C38.8 79.4 46.6 84.6 52.8 92.8 C53.4 93.4 54.4 92.4 54.0 91.6 Z"/>
+  <path fill-rule="evenodd" fill="url(#rp-outer)" d="M70.8 97.6 C78.6 87.2 90.2 83.2 99.6 76.2 C108.4 69.6 112.0 58.6 109.4 47.6 C107.2 56.0 100.4 61.6 91.2 65.2 C80.8 69.2 73.6 78.6 70.0 95.6 C69.8 96.6 70.3 97.4 70.8 97.6 Z M74.0 91.6 C80.2 82.8 88.8 77.6 97.8 72.2 C89.2 79.4 81.4 84.6 75.2 92.8 C74.6 93.4 73.6 92.4 74.0 91.6 Z"/>
+  <path fill-rule="evenodd" fill="url(#rp-inner)" d="M59.2 90.6 C53.6 77.6 43.2 67.2 37.8 55.2 C33.6 45.8 35.0 35.6 40.8 28.4 C39.8 36.6 44.2 43.8 50.2 50.4 C56.8 57.6 60.8 68.8 60.4 89.2 C60.3 90.2 59.6 91.0 59.2 90.6 Z M57.0 82.8 C53.4 71.8 47.2 62.6 41.6 53.6 C46.4 63.8 51.8 72.6 55.6 83.8 C56.0 84.6 57.3 83.8 57.0 82.8 Z"/>
+  <path fill-rule="evenodd" fill="url(#rp-inner)" d="M68.8 90.6 C74.4 77.6 84.8 67.2 90.2 55.2 C94.4 45.8 93.0 35.6 87.2 28.4 C88.2 36.6 83.8 43.8 77.8 50.4 C71.2 57.6 67.2 68.8 67.6 89.2 C67.7 90.2 68.4 91.0 68.8 90.6 Z M71.0 82.8 C74.6 71.8 80.8 62.6 86.4 53.6 C81.6 63.8 76.2 72.6 72.4 83.8 C72.0 84.6 70.7 83.8 71.0 82.8 Z"/>
+  <path fill="url(#rp-center)" d="M64 17.5 C66.4 26.8 74.2 35.2 74.2 46.8 C74.2 57.8 66.8 67.2 64.5 85.8 C64.4 86.8 63.6 86.8 63.5 85.8 C61.2 67.2 53.8 57.8 53.8 46.8 C53.8 35.2 61.6 26.8 64 17.5 Z"/>
+  <path fill="url(#rp-spark)" d="M64 88.2 C64.7 91.0 65.5 92.1 67.8 93.0 C65.5 93.9 64.7 95.0 64 97.8 C63.3 95.0 62.5 93.9 60.2 93.0 C62.5 92.1 63.3 91.0 64 88.2 Z"/>
+  <path fill="url(#rp-ash-hi)" d="M64 100.6 L58.4 106.8 L64 113.0 Z"/>
+  <path fill="url(#rp-ash-lo)" d="M64 100.6 L69.6 106.8 L64 113.0 Z"/>
 </svg>
