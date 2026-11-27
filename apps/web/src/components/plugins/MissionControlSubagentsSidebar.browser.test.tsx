@@ -292,10 +292,105 @@ describe("MissionControlWorkSidebar", () => {
 
     const subagentsSection = screen.getByTestId("mission-control-subagents-section").element();
     const tasksSection = screen.getByTestId("mission-control-tasks-section").element();
-    const subagentsList = subagentsSection.querySelector("ol")!;
+    const subagentsScroll = screen.getByTestId("mission-control-subagents-scroll").element();
 
     expect(subagentsSection.getBoundingClientRect().height).toBeLessThanOrEqual(620 * 0.45 + 2);
-    expect(subagentsList.scrollHeight).toBeGreaterThan(subagentsList.clientHeight);
+    expect(subagentsScroll.scrollHeight).toBeGreaterThan(subagentsScroll.clientHeight);
     expect(tasksSection.getBoundingClientRect().height).toBeGreaterThanOrEqual(620 * 0.54);
+  });
+
+  it("compacts and collapses long idle subagent histories with expand and instant search", async () => {
+    const idleSubagents = Array.from({ length: 33 }, (_, index) => ({
+      id: NodeId.make(`idle-${index + 1}`),
+      runId: RunId.make("run-1"),
+      origin: "app_owned" as const,
+      driver: ProviderDriverKind.make("codex"),
+      providerInstanceId: ProviderInstanceId.make("codex-default"),
+      title: index === 18 ? "Blackjack Dealer Portrait" : `Asset Generator ${index + 1}`,
+      model: "gpt-5.4",
+      modelSelection: undefined,
+      status: "idle" as const,
+      isActive: false,
+      isCompleted: false,
+      isFailed: false,
+      isStopped: false,
+      detail: null,
+      workflowAgentCount: null,
+      workflowActiveCount: 0,
+      childThreadId: ThreadId.make(`child-idle-${index + 1}`),
+      remoteChild: undefined,
+      startedAt: "2026-11-26T18:20:00.000Z",
+      completedAt: null,
+      updatedAt: "2026-11-26T18:25:00.000Z",
+      durationMs: null,
+    }));
+
+    await using screen = await render(
+      <AppAtomRegistryProvider>
+        <div className="flex h-[620px] w-[960px] bg-background">
+          <div className="flex-1" />
+          <MissionControlWorkSidebar
+            threadRef={threadRef}
+            subagentsPanelId="subagents-panel"
+            tasksPanelId="tasks-panel"
+            subagentSummary={makeSubagentsSummary({
+              phase: "idle",
+              runActive: false,
+              subagents: idleSubagents,
+              total: idleSubagents.length,
+              active: 0,
+              completed: 0,
+              idle: idleSubagents.length,
+            })}
+            taskSummary={null}
+            subagentsVisible
+            tasksVisible={false}
+            mode="docked"
+            wide
+            onCloseSubagents={vi.fn()}
+            onCloseTasks={vi.fn()}
+            onCloseAll={vi.fn()}
+            onInspectSubagent={vi.fn()}
+          />
+        </div>
+      </AppAtomRegistryProvider>,
+      { router: false },
+    );
+
+    const renderedItemsBefore = screen
+      .getByTestId("mission-control-subagents-section")
+      .element()
+      .querySelectorAll('[data-testid="mission-control-subagent-item"]');
+    expect(renderedItemsBefore.length).toBe(4);
+
+    const historyToggle = screen.getByTestId("mission-control-subagents-history-toggle");
+    await expect.element(historyToggle).toBeVisible();
+    await expect
+      .element(screen.getByTestId("mission-control-subagents-history-count"))
+      .toHaveTextContent("29 idle");
+
+    // Filtering reaches collapsed subagents immediately.
+    const filterInput = screen.getByTestId("mission-control-subagents-filter");
+    await userEvent.type(filterInput, "Blackjack");
+    await expect.element(screen.getByText("Blackjack Dealer Portrait")).toBeVisible();
+    await expect
+      .element(screen.getByTestId("mission-control-subagents-count"))
+      .toHaveTextContent("1 of 33 subagents");
+
+    await userEvent.click(screen.getByRole("button", { name: "Clear subagent filter" }));
+    await expect
+      .element(screen.getByTestId("mission-control-subagents-count"))
+      .toHaveTextContent("33 subagents");
+
+    // Expanding Earlier reveals the full archived list.
+    await userEvent.click(historyToggle);
+    await expect
+      .element(screen.getByTestId("mission-control-subagents-history-list"))
+      .toBeVisible();
+    const renderedItemsAfter = screen
+      .getByTestId("mission-control-subagents-section")
+      .element()
+      .querySelectorAll('[data-testid="mission-control-subagent-item"]');
+    expect(renderedItemsAfter.length).toBe(33);
   });
 });

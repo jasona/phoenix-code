@@ -11,7 +11,11 @@ import type { ThreadStructure } from "@t3tools/client-runtime/state/models";
 import * as DateTime from "effect/DateTime";
 import { describe, expect, it } from "vite-plus/test";
 
-import { deriveMissionControlSubagents } from "./missionControlSubagents.logic";
+import {
+  deriveMissionControlSubagents,
+  MISSION_CONTROL_SUBAGENTS_RECENT_LIMIT,
+  partitionMissionControlSubagents,
+} from "./missionControlSubagents.logic";
 
 type ProjectionInput = Pick<
   ThreadStructure,
@@ -241,5 +245,81 @@ describe("deriveMissionControlSubagents", () => {
     );
     expect(completedSummary?.phase).toBe("completed");
     expect(completedSummary?.completedAt).toBe("2026-11-26T18:42:00.000Z");
+  });
+});
+
+describe("partitionMissionControlSubagents", () => {
+  it("collapses older idle subagents after the recent preview and enables filtering for long histories", () => {
+    const subagents = Array.from({ length: 33 }, (_, index) =>
+      makeSubagent({
+        id: `idle-${index + 1}`,
+        title: index === 25 ? "Blackjack Dealer Portrait" : `Slot Generator ${index + 1}`,
+        status: "idle",
+        startedAt: DateTime.makeUnsafe(
+          `2026-11-26T18:${String(index % 60).padStart(2, "0")}:00.000Z`,
+        ),
+        updatedAt: DateTime.makeUnsafe(
+          `2026-11-26T18:${String(index % 60).padStart(2, "0")}:30.000Z`,
+        ),
+      }),
+    );
+
+    const summary = deriveMissionControlSubagents(
+      makeProjection({
+        runs: [makeRun("run-1", 1, "completed")],
+        subagents,
+      }),
+    )!;
+
+    const partition = partitionMissionControlSubagents(summary);
+    expect(partition.showFilter).toBe(true);
+    expect(partition.activeEntries).toHaveLength(0);
+    expect(partition.issueEntries).toHaveLength(0);
+    expect(partition.recentSettledEntries).toHaveLength(MISSION_CONTROL_SUBAGENTS_RECENT_LIMIT);
+    expect(partition.archivedSettledEntries).toHaveLength(
+      33 - MISSION_CONTROL_SUBAGENTS_RECENT_LIMIT,
+    );
+
+    const filtered = partitionMissionControlSubagents(summary, "blackjack");
+    expect(filtered.isFiltering).toBe(true);
+    expect(filtered.filteredEntries.map((entry) => entry.title)).toEqual([
+      "Blackjack Dealer Portrait",
+    ]);
+  });
+
+  it("keeps live and failed subagents visible while archiving large settled histories", () => {
+    const subagents = [
+      makeSubagent({ id: "live-1", title: "Live worker", status: "running" }),
+      makeSubagent({ id: "fail-1", title: "Failed worker", status: "failed" }),
+      ...Array.from({ length: 8 }, (_, index) =>
+        makeSubagent({
+          id: `idle-${index + 1}`,
+          title: `Idle worker ${index + 1}`,
+          status: "idle",
+        }),
+      ),
+    ];
+
+    const summary = deriveMissionControlSubagents(makeProjection({ subagents }))!;
+    const partition = partitionMissionControlSubagents(summary);
+
+    expect(partition.activeEntries.map((entry) => entry.id)).toEqual([NodeId.make("live-1")]);
+    expect(partition.issueEntries.map((entry) => entry.id)).toEqual([NodeId.make("fail-1")]);
+    expect(partition.recentSettledEntries).toHaveLength(0);
+    expect(partition.archivedSettledEntries).toHaveLength(8);
+  });
+
+  it("keeps small settled histories uncollapsed without showing a filter box", () => {
+    const subagents = Array.from({ length: 4 }, (_, index) =>
+      makeSubagent({ id: `idle-${index + 1}`, title: `Idle ${index + 1}`, status: "idle" }),
+    );
+    const summary = deriveMissionControlSubagents(
+      makeProjection({ runs: [makeRun("run-1", 1, "completed")], subagents }),
+    )!;
+
+    const partition = partitionMissionControlSubagents(summary);
+    expect(partition.showFilter).toBe(false);
+    expect(partition.recentSettledEntries).toHaveLength(4);
+    expect(partition.archivedSettledEntries).toHaveLength(0);
   });
 });
