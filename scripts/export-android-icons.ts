@@ -15,12 +15,12 @@ type IconVariant = "dev" | "nightly" | "prod";
 
 const ADAPTIVE_CANVAS = 432;
 const SPLASH_CANVAS = 1152;
-const TEXT = { x: 15.53, y: 37, width: 94.5, height: 57 };
-const WORDMARK_FRACTION = 0.48;
+const TEXT = { x: 16, y: 17, width: 96, height: 96 };
+const WORDMARK_FRACTION = 0.56;
 const COMPOSER_CANVAS_PT = 1024;
 const SVG_DENSITY = 300;
 const OUTPUT_DIRECTORY = "apps/mobile/assets";
-const PRODUCTION_BACKGROUND_COLOR = "#000000";
+const PRODUCTION_BACKGROUND_COLOR = "#131110";
 
 export class AndroidIconRenderError extends Schema.TaggedError<AndroidIconRenderError>()(
   "AndroidIconRenderError",
@@ -88,10 +88,11 @@ const renderForeground = Effect.fn("androidIcons.renderForeground")(function* (
   size: number,
 ) {
   const text = yield* readLayerSource(repositoryRoot, "prod", "text.svg");
+  const defs = text.match(/<defs>[\s\S]*?<\/defs>/)?.[0] ?? "";
   const paths = text.match(/<path[^>]*\/>/g) ?? [];
   return yield* rasterize(
     "foreground",
-    canvasSvg(size, `<g transform="${wordmarkTransform(size)}">${paths.join("")}</g>`),
+    canvasSvg(size, `${defs}<g transform="${wordmarkTransform(size)}">${paths.join("")}</g>`),
     size,
   );
 });

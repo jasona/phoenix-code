@@ -68,6 +68,7 @@ import {
   ChevronRightIcon,
 } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
+import { PhoenixMark, PhoenixWordmark } from "../PhoenixMark";
 import { ExpandedImagePreview } from "./ExpandedImagePreview";
 import {
   CHAT_TIMELINE_ANCHOR_OFFSET,
@@ -1463,9 +1464,23 @@ const ConversationTimeline = memo(function ConversationTimeline({
           className="flex h-full items-center justify-center ps-(--chat-lane-inset-start) pe-(--chat-lane-inset-end)"
           style={{ paddingBottom: emptyPlaceholderInset }}
         >
-          <p className="text-sm text-muted-foreground">
-            <T>Send a message to start the conversation.</T>
-          </p>
+          <div className="flex flex-col items-center text-center select-none">
+            <div className="relative flex flex-col items-center">
+              <div
+                aria-hidden
+                className="phoenix-empty-glow pointer-events-none absolute top-1/2 left-1/2 -z-10 size-60 -translate-x-1/2 -translate-y-1/2 rounded-full sm:size-72"
+              />
+              <PhoenixMark
+                variant="brand"
+                className="size-32 drop-shadow-lg sm:size-40"
+                aria-hidden
+              />
+              <PhoenixWordmark className="-mt-1 h-6 w-auto text-foreground/90 sm:h-7" aria-hidden />
+            </div>
+            <p className="mt-5 text-sm text-muted-foreground/85">
+              <T>Send a message to start the conversation.</T>
+            </p>
+          </div>
         </div>
       </>
     );

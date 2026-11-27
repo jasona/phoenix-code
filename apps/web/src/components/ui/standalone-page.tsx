@@ -24,9 +24,9 @@ export function StandalonePageHeader({
     <>
       <div className="flex items-baseline justify-between gap-3 text-muted-foreground">
         {/* oxlint-disable-next-line t3code/no-untranslated-copy -- product wordmark */}
-        <span className="flex items-center gap-2.5" role="img" aria-label="Phoenix">
-          <PhoenixMark variant="plate" className="size-7 shrink-0 text-foreground" aria-hidden />
-          <PhoenixWordmark className="h-4 w-auto shrink-0 text-foreground" aria-hidden />
+        <span className="flex items-center gap-1.5" role="img" aria-label="Phoenix">
+          <PhoenixMark variant="brand" className="size-10 shrink-0 drop-shadow-sm" aria-hidden />
+          <PhoenixWordmark className="h-4.5 w-auto shrink-0 text-foreground" aria-hidden />
         </span>
         {context ? <span className="text-sm">{context}</span> : null}
       </div>

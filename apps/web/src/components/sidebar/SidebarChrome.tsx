@@ -85,7 +85,7 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
           aria-label={gt("Toggle main sidebar")}
         />
       </div>
-      <div className="relative z-10 flex h-8 min-w-0 flex-1 flex-wrap content-start items-center gap-x-2 overflow-hidden py-0.5">
+      <div className="relative z-10 flex h-10 min-w-0 flex-1 flex-wrap content-center items-center gap-x-2 overflow-hidden">
         <div className="flex shrink-0 items-center gap-1">
           <SidebarBrand onBackdrop={backdropVariant !== null} />
           {isElectron ? (
@@ -183,7 +183,7 @@ function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
     <Link
       aria-label={gt("Phoenix home")}
       className={cn(
-        "relative z-10 ml-[var(--workspace-titlebar-content-left)] hidden h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2 focus-visible:ring-inset md:flex",
+        "relative z-10 ml-[var(--workspace-titlebar-content-left)] hidden h-10 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2 focus-visible:ring-inset md:flex",
         onBackdrop ? "text-white" : "text-foreground",
       )}
       to="/"
@@ -197,12 +197,12 @@ function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex min-w-0 items-center gap-2.5",
+        "inline-flex min-w-0 items-center gap-1.5",
         onBackdrop ? "text-white" : "text-foreground",
       )}
     >
-      <PhoenixMark variant="plate" className="size-6 shrink-0" aria-hidden />
-      <PhoenixWordmark className="h-3.5 w-auto shrink-0" aria-hidden />
+      <PhoenixMark variant="brand" className="size-9 shrink-0 drop-shadow-sm" aria-hidden />
+      <PhoenixWordmark className="h-4 w-auto shrink-0 drop-shadow-xs" aria-hidden />
     </span>
   );
 }

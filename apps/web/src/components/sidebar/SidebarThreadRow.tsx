@@ -1045,9 +1045,9 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
       !props.isActive &&
       "[&:not(:hover):not(:focus-within)_*:not(.live-activity-focus_*)]:text-secondary-label",
     props.isActive
-      ? "bg-sidebar-row-active text-sidebar-foreground light:ring-1 light:ring-inset light:ring-sidebar-border/70"
+      ? "bg-sidebar-row-active text-sidebar-foreground ring-1 ring-inset ring-sidebar-border/80 shadow-xs/5 dark:inset-shadow-control-highlight"
       : isSelected || props.sweepAction !== null
-        ? "bg-sidebar-row-selected text-sidebar-foreground light:ring-1 light:ring-inset light:ring-sidebar-border/70"
+        ? "bg-sidebar-row-selected text-sidebar-foreground ring-1 ring-inset ring-sidebar-border/65"
         : hasUnsentDraft
           ? cn(draftSurfaceClassName, "text-sidebar-foreground")
           : shouldRecede
@@ -1905,9 +1905,9 @@ export const SidebarSearchResultRow = memo(function SidebarSearchResultRow(props
                 );
               }}
               className={cn(
-                "group/sidebar-row group/v2-row flex min-h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1 text-left text-sm outline-none",
+                "group/sidebar-row group/v2-row flex min-h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1 text-left text-sm outline-none transition-colors duration-150",
                 props.isHighlighted || props.isRouteActive
-                  ? "bg-sidebar-row-active text-sidebar-foreground"
+                  ? "bg-sidebar-row-active text-sidebar-foreground ring-1 ring-inset ring-sidebar-border/80 shadow-xs/5 dark:inset-shadow-control-highlight"
                   : "text-sidebar-muted-foreground/75 hover:bg-sidebar-row-hover hover:text-sidebar-foreground",
                 isFileDragOver && "ring-1 ring-inset ring-primary/70",
                 isFileDragOver && !props.isRouteActive && "bg-sidebar-row-hover",
