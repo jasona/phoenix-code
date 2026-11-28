@@ -208,7 +208,9 @@ vp run dist:desktop:linux
 (which needs Node 26 and Rust in its home directory and a checkout at `~/src/t3code-mia`), both from
 the committed `HEAD`. Without it, the app falls back to upstream's server on SSH machines.
 
-The AppImage is written to `release/`. It does not auto-update; rebuild to update.
+The AppImage is written to `release/`. For automatic updates, install the Linux x64 AppImage from [Phoenix releases](https://github.com/jasona/phoenix-code/releases). An older build that says “no update feed is configured” needs this one manual install. Choose **Settings → About → Update track** to switch between Stable and Nightly.
+
+The **Phoenix release** GitHub Actions workflow publishes Linux x64 desktop and CLI builds from `main`. Nightlies run daily when there are new commits. To cut a stable release, commit the next version with `node .github/scripts/set-release-version.cjs X.Y.Z`, then dispatch the workflow with **stable**. To build a local AppImage against the same feed, set `T3CODE_DESKTOP_UPDATE_REPOSITORY=jasona/phoenix-code` when running the build.
 
 See [Local models](./docs/user/local-models.md) for setting up servers and providers.
 

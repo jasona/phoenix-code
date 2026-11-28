@@ -8,7 +8,7 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { vi } from "vite-plus/test";
 
-import { npmReleaseAtom, npmReleaseFailureMessage } from "./npmRelease";
+import { lookupPhoenixTrack, npmReleaseAtom, npmReleaseFailureMessage } from "./npmRelease";
 import { primaryEnvironmentIdAtom } from "./primaryEnvironment";
 import { serverEnvironment } from "./server";
 
@@ -51,6 +51,13 @@ const configFor = (environmentId: EnvironmentId | null, supported = true) =>
     issues: [],
     providers: [],
     availableEditors: [],
+    observability: {
+      logsDirectoryPath: "/test/logs",
+      localTracingEnabled: false,
+      otlpTracesEnabled: false,
+      otlpMetricsEnabled: false,
+      otlpLogsEnabled: false,
+    },
     settings: {},
   });
 
@@ -159,4 +166,35 @@ it("only displays the safe release error, not arbitrary transport diagnostics", 
   expect(
     npmReleaseFailureMessage(Cause.fail(new Error("sensitive transport details"))),
   ).not.toContain("sensitive");
+});
+
+it("reads Phoenix migration compatibility from the selected public GitHub release", async () => {
+  const nightly = "0.1.13-nightly.20261127.1";
+  const stable = { tag_name: "v0.1.12", body: "Database migration: 138", draft: false };
+  const releases = [
+    stable,
+    { ...stable, tag_name: "v0.1.13-nightly.20261127.2", draft: true },
+    { ...stable, tag_name: `v${nightly}`, body: "Database migration: 139" },
+  ];
+  const request = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(Response.json(stable))
+    .mockResolvedValueOnce(Response.json(releases));
+  try {
+    const signal = new AbortController().signal;
+    expect(await lookupPhoenixTrack("latest", signal)).toEqual({
+      version: "0.1.12",
+      databaseMigration: 138,
+    });
+    expect(await lookupPhoenixTrack("nightly", signal)).toEqual({
+      version: nightly,
+      databaseMigration: 139,
+    });
+    expect(request.mock.calls.map(([url]) => url)).toEqual([
+      "https://api.github.com/repos/jasona/phoenix-code/releases/latest",
+      "https://api.github.com/repos/jasona/phoenix-code/releases?per_page=100&page=1",
+    ]);
+  } finally {
+    request.mockRestore();
+  }
 });

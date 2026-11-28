@@ -2739,7 +2739,7 @@ export function resolvePackageManagerUserAgent(packageManager: string): string {
 
 export function resolveDesktopProductName(version: string): string {
   return resolveDesktopUpdateChannel(version) === "nightly"
-    ? "M3 Code (Nightly)"
+    ? "Phoenix (Nightly)"
     : (desktopPackageJson.productName ?? "M3 Code");
 }
 
@@ -2917,7 +2917,7 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
     if (buildConfig.publish) {
       buildConfig.appImage = {
         artifactName:
-          updateChannel === "nightly" ? "M3-Code-Nightly-${arch}.${ext}" : "M3-Code-${arch}.${ext}",
+          updateChannel === "nightly" ? "Phoenix-Nightly-${arch}.${ext}" : "Phoenix-${arch}.${ext}",
       };
     }
     buildConfig.deb = {
