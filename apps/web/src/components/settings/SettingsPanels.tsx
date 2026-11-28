@@ -37,7 +37,12 @@ import { createModelSelection, pickModelSelection } from "@t3tools/shared/model"
 import { resolvePastedPath } from "@t3tools/shared/path";
 import * as Equal from "effect/Equal";
 import * as Schema from "effect/Schema";
-import { APP_VERSION, HOSTED_APP_CHANNEL, HOSTED_APP_CHANNEL_LABEL } from "../../branding";
+import {
+  IS_CHECKOUT_BUILD,
+  APP_VERSION,
+  HOSTED_APP_CHANNEL,
+  HOSTED_APP_CHANNEL_LABEL,
+} from "../../branding";
 import { AboutVersionTitle } from "./AboutVersionTitle";
 import { CliCommandSettingsRow } from "./CliCommandSettingsRow";
 import { MobileAppSettingsRow } from "./MobileAppSettingsRow";
@@ -2331,11 +2336,13 @@ export function ThreadsSettingsPanel() {
           serverScoped
           settingKeys={["textGenerationFallback"]}
           {...setting("text-generation-fallback")}
-          description="Where background writing goes when its model cannot run. Local models only never sends it to a cloud provider you did not choose."
+          description={gt(
+            "Where background writing goes when its model cannot run. Local models only never sends it to a cloud provider you did not choose.",
+          )}
           resetAction={
             settings.textGenerationFallback !== DEFAULT_UNIFIED_SETTINGS.textGenerationFallback ? (
               <SettingResetButton
-                ariaLabel="Reset text generation fallback"
+                ariaLabel={gt("Reset text generation fallback")}
                 onClick={() =>
                   updateSettings({
                     textGenerationFallback: DEFAULT_UNIFIED_SETTINGS.textGenerationFallback,
@@ -2353,7 +2360,7 @@ export function ThreadsSettingsPanel() {
                 }
               }}
             >
-              <SelectTrigger size="sm" className="w-full sm:w-56" aria-label="Fallback">
+              <SelectTrigger size="sm" className="w-full sm:w-56" aria-label={gt("Fallback")}>
                 <SelectValue>
                   {(value: TextGenerationFallback) => TEXT_GENERATION_FALLBACK_LABELS[value]}
                 </SelectValue>
@@ -2615,7 +2622,18 @@ export function AboutSettingsPanel() {
             }
           />
         ) : null}
-        {isElectron || HOSTED_APP_CHANNEL ? (
+        {IS_CHECKOUT_BUILD ? (
+          <>
+            <SettingsRow
+              id={setting("app-version").id}
+              title={<AboutVersionTitle checkout />}
+              description={gt(
+                "Build and restart Phoenix from this checkout to test local changes.",
+              )}
+            />
+            {isElectron && <CliCommandSettingsRow />}
+          </>
+        ) : isElectron || HOSTED_APP_CHANNEL ? (
           <AboutVersionSection />
         ) : (
           <>

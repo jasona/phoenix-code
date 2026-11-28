@@ -9,6 +9,7 @@ import { AudioPreviewUnmountContext } from "../files/AudioPreview";
 import { ThreadFindTimelineContext } from "./ThreadFindProvider";
 import { MarkdownFindContext } from "./markdownFindContext";
 import { useChatCanvas } from "./ChatCanvasContext";
+import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { WorkLogBlock } from "./WorkLog";
 import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
 import type { WorktreeSetupSnapshot } from "@t3tools/contracts";
@@ -281,6 +282,7 @@ interface MessagesTimelineProps {
   displayThreadKey?: string;
   /** Off where another region already speaks the thread's status, like a subagent's bar. */
   announceTurnStatus?: boolean;
+  onOpenTurnDiff?: ((runId: RunId) => void) | undefined;
   onOpenToolDiff?: (target: ToolCallDiffTarget) => void;
   onOpenThread: (
     threadId: OrchestrationV2TurnItem["threadId"],
@@ -406,6 +408,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   displayThreadKey,
   announceTurnStatus = true,
   onOpenToolDiff,
+  onOpenTurnDiff,
   onOpenThread,
   renderHtmlRender,
   turnItemSource,
@@ -1153,6 +1156,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
     onFileDownload,
     openPullRequest,
     onOpenToolDiff,
+    onOpenTurnDiff,
     onOpenThread,
     renderHtmlRender,
     turnItemSource,
@@ -1910,13 +1914,14 @@ function WorkHistorySkeleton() {
 
 function TurnFoldTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "turn-fold" }> }) {
   const ctx = use(TimelineRowCtx);
+  const gt = useGT();
   const { loading, error, toggle } = useDeferredWorkLoading(row, () =>
     ctx.onToggleTurnFold(row.runId),
   );
 
   return (
     <div className="group/timeline-row border-b border-border/60 pb-2 pe-0.5 pt-1">
-      <div className="relative flex items-center gap-1">
+      <div className="relative flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
         <button
           type="button"
           aria-expanded={row.expanded}
@@ -1935,6 +1940,55 @@ function TurnFoldTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "turn-
             <ChevronRightIcon className="size-3.5" />
           )}
         </button>
+        {row.fileCount ? (
+          ctx.onOpenTurnDiff ? (
+            <button
+              type="button"
+              className="rounded-sm text-xs text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-ring"
+              onClick={() => ctx.onOpenTurnDiff?.(row.runId)}
+            >
+              {gt("{count, plural, one {# file changed} other {# files changed}}", {
+                count: row.fileCount,
+              })}
+            </button>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              {gt("{count, plural, one {# file changed} other {# files changed}}", {
+                count: row.fileCount,
+              })}
+            </span>
+          )
+        ) : null}
+        {row.testResult && (
+          <Popover>
+            <PopoverTrigger
+              render={
+                <button
+                  type="button"
+                  className="rounded-sm text-xs text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-ring"
+                />
+              }
+            >
+              {gt("{count, plural, one {# test passed} other {# tests passed}}", {
+                count: row.testResult.passed,
+              })}
+            </PopoverTrigger>
+            <PopoverPopup
+              side="bottom"
+              align="start"
+              width="lg"
+              padding="compact"
+              aria-label={gt("Test output")}
+            >
+              <pre
+                tabIndex={0}
+                className="max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono text-xs"
+              >
+                {row.testResult.output}
+              </pre>
+            </PopoverPopup>
+          </Popover>
+        )}
         <TimelineRowTimestamp
           createdAt={row.createdAt}
           timestampFormat={ctx.timestampFormat}

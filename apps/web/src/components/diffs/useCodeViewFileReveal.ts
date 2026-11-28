@@ -11,6 +11,7 @@ interface FileRevealHandle {
     | {
         getRenderedItems?(): readonly {
           id: string;
+          element?: HTMLElement;
           instance: {
             getDiffForSearch?(): FileDiffMetadata | undefined;
             revealLine?(line: number): boolean;
@@ -70,7 +71,30 @@ export function createCodeViewFileReveal() {
     loadingFile?: boolean;
     settling?: boolean;
   } | null = null;
+  let gutterTarget: { id: string; range: SelectedLineRange } | null = null;
+  const flashGutter = () => {
+    if (!gutterTarget) return;
+    const { id, range } = gutterTarget;
+    const item = viewer
+      ?.getInstance()
+      ?.getRenderedItems?.()
+      .find((entry) => entry.id === id);
+    const kind = range.side === "deletions" ? "change-deletion" : "change-addition";
+    const gutter = item?.element?.shadowRoot?.querySelector<HTMLElement>(
+      `[data-column-number="${range.start}"][data-line-type="${kind}"]`,
+    );
+    if (!gutter) return;
+    gutterTarget = null;
+    const color = "color-mix(in srgb, currentColor 25%, transparent)";
+    gutter.animate([{ backgroundColor: color }, { backgroundColor: "transparent" }], {
+      duration: 850,
+      easing: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "steps(1, end)"
+        : "ease-out",
+    });
+  };
   const flush = () => {
+    flashGutter();
     if (pending === null || viewer === null) return;
     const item = viewer.getItem(pending.id);
     if (!viewer.getInstance() || item === undefined || item.collapsed === true) return;
@@ -144,6 +168,7 @@ export function createCodeViewFileReveal() {
         ? { type: "range", id: target.id, range: target.range, align: "center" }
         : { type: "item", id: target.id, align: "start" },
     );
+    flashGutter();
   };
   return {
     attach(next: FileRevealHandle | null) {
@@ -163,12 +188,14 @@ export function createCodeViewFileReveal() {
       viewer = next;
       flush();
     },
-    request(fileKey: string, range?: SelectedLineRange) {
+    request(fileKey: string, range?: SelectedLineRange, highlight = false) {
+      gutterTarget = range && highlight ? { id: fileKey, range } : null;
       pending = { id: fileKey, ...(range ? { range } : {}) };
       flush();
     },
     /** The user scrolled; a reveal still being positioned must not pull them back. */
     cancel() {
+      gutterTarget = null;
       pending = null;
     },
     flush,

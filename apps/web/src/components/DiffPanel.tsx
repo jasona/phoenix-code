@@ -1,7 +1,7 @@
 import { T, useGT, useMessages, Var } from "gt-react";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { useAtomValue } from "@effect/atom-react";
-import type { FileDiffContentsLoader, FileDiffMetadata } from "@pierre/diffs";
+import type { FileDiffContentsLoader, FileDiffMetadata, SelectedLineRange } from "@pierre/diffs";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -17,6 +17,7 @@ import {
   ArrowRightIcon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronsDownIcon,
   Columns2Icon,
   FlaskConicalOffIcon,
   FolderTreeIcon,
@@ -198,6 +199,8 @@ function DiffFileCollapseToggle({
 }
 
 function DiffFileHeaderSuffix({
+  fileDiff,
+  onReveal,
   filePath,
   workspaceRoot,
   hasStat,
@@ -205,6 +208,8 @@ function DiffFileHeaderSuffix({
   truncated,
   onRetry,
 }: {
+  fileDiff: FileDiffMetadata;
+  onReveal: (range: SelectedLineRange) => void;
   filePath: string;
   workspaceRoot: string | undefined;
   hasStat: boolean;
@@ -212,8 +217,40 @@ function DiffFileHeaderSuffix({
   truncated: boolean;
   onRetry: (path: string) => void;
 }) {
+  const gt = useGT();
+  const cursor = useRef(0);
   return (
     <>
+      {fileDiff.hunks.length > 0 && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                size="icon-micro"
+                variant="ghost"
+                aria-label={gt("Next changed hunk")}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  const index = cursor.current % fileDiff.hunks.length;
+                  cursor.current = index + 1;
+                  const hunk = fileDiff.hunks[index]!;
+                  const change = hunk.hunkContent.find((block) => block.type === "change");
+                  if (!change) return;
+                  const side = change.additions > 0 ? "additions" : "deletions";
+                  const line =
+                    side === "additions"
+                      ? hunk.additionStart + change.additionLineIndex - hunk.additionLineIndex
+                      : hunk.deletionStart + change.deletionLineIndex - hunk.deletionLineIndex;
+                  onReveal({ start: line, end: line, side });
+                }}
+              />
+            }
+          >
+            <ChevronsDownIcon aria-hidden className="size-3.5" />
+          </TooltipTrigger>
+          <TooltipPopup>{gt("Next changed hunk")}</TooltipPopup>
+        </Tooltip>
+      )}
       <span data-diff-copy-path className="inline-flex">
         <DiffFilePathCopyButton filePath={filePath} workspaceRoot={workspaceRoot} />
       </span>
@@ -817,7 +854,7 @@ export default function DiffPanel({
     codeViewScroll.flush();
     codeViewReveal.flush();
   });
-  const revealDiffFile = (filePath: string) => {
+  const revealDiffFile = (filePath: string, range?: SelectedLineRange) => {
     const index = renderableFileEntries.findIndex(
       (candidate) => resolveFileDiffPath(candidate.fileDiff) === filePath,
     );
@@ -830,7 +867,7 @@ export default function DiffPanel({
       return next;
     });
     if (lazySource) requestFile(filePath);
-    codeViewReveal.request(file.fileKey);
+    codeViewReveal.request(file.fileKey, range, !!range);
     return true;
   };
 
@@ -1745,6 +1782,9 @@ export default function DiffPanel({
                       const state = fileStates.get(path);
                       return (
                         <DiffFileHeaderSuffix
+                          key={fileDiff.cacheKey ?? path}
+                          fileDiff={fileDiff}
+                          onReveal={(range) => revealDiffFile(path, range)}
                           filePath={path}
                           workspaceRoot={activeCwd}
                           hasStat={fileStats.has(path)}

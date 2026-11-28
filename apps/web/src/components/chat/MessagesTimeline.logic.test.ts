@@ -1,3 +1,4 @@
+import { passedTestsFromOutput } from "./passedTestsFromOutput";
 import { ThreadId, type WorktreeSetupSnapshot } from "@t3tools/contracts";
 import {
   CheckpointRef,
@@ -39,6 +40,16 @@ import {
   workEntryReadOutput,
 } from "./MessagesTimeline.logic";
 import { workEntryIconName } from "./TimelineWorkEntryRow.logic";
+
+describe("completed turn test evidence", () => {
+  it("reads runner totals without counting files or guessing from prose", () => {
+    expect(passedTestsFromOutput("Test Files  3 passed (3)\n      Tests  12 passed (12)")).toBe(12);
+    expect(passedTestsFromOutput("Tests: 1 failed, 4 passed, 5 total")).toBe(4);
+    expect(passedTestsFromOutput("=== 1 passed in 0.12s ===")).toBe(1);
+    expect(passedTestsFromOutput("Test Files  3 passed (3)")).toBeNull();
+    expect(passedTestsFromOutput("All tests passed")).toBeNull();
+  });
+});
 
 describe("resolveAssistantMessageCopyState", () => {
   it("copies the rendered representation of Codex directives", () => {

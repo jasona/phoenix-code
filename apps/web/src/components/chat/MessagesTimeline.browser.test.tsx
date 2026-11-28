@@ -3,6 +3,7 @@ import { HtmlRenderDocument } from "../files/BrowserDocumentFrame";
 import { AudioPreview } from "../files/AudioPreview";
 import { cdp, page, userEvent } from "vite-plus/test/browser";
 import {
+  CheckpointRef,
   ComposerContextId,
   EnvironmentId,
   MessageId,
@@ -297,6 +298,43 @@ describe("MessagesTimeline work rows", () => {
       expect(frame.clientHeight).toBe(1437);
       expect(frame.getBoundingClientRect().top).toBeCloseTo(top, 0);
     });
+  });
+
+  it("opens the completed turn's checkpoint and its reported test output", async () => {
+    const runId = RunId.make("tested-run");
+    const open = vi.fn();
+    const output = "Test Files  3 passed (3)\nTests  12 passed (12)";
+    await using screen = await renderElement(
+      <MessagesTimeline
+        {...baseProps()}
+        onOpenTurnDiff={open}
+        timelineEntries={[
+          work("tests", {
+            runId,
+            tone: "tool",
+            label: "Ran tests",
+            projectedItem: v2Item("command_execution", { runId, input: "vp test", output }),
+          }),
+          message("Done", { role: "assistant", runId }, "final"),
+        ]}
+        turnDiffSummaries={[
+          {
+            runId,
+            checkpointTurnCount: 1,
+            checkpointRef: CheckpointRef.make("refs/t3/test"),
+            status: "ready",
+            files: [],
+            filesTotal: { count: 3, additions: 2, deletions: 4 },
+            assistantMessageId: null,
+            completedAt: CREATED_AT,
+          },
+        ]}
+      />,
+    );
+    await screen.getByRole("button", { name: "3 files changed" }).click();
+    expect(open).toHaveBeenCalledWith(runId);
+    await screen.getByRole("button", { name: "12 tests passed" }).click();
+    await expect.element(page.getByText(output)).toBeVisible();
   });
 
   it("keeps the worked-for heading in place when expanded at the bottom", async () => {

@@ -4,7 +4,7 @@ import { resolveEnvironmentMachineKind, type ScopedProjectRef } from "@t3tools/c
 import { scopedProjectKey, scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { isScratchProject } from "@t3tools/client-runtime/state/projects";
 import { T, useGT, Var } from "gt-react";
-import { FolderPlusIcon } from "lucide-react";
+import { FolderPlusIcon, GitBranchIcon } from "lucide-react";
 import { useAtomValue } from "@effect/atom-react";
 import { useRef, useState } from "react";
 
@@ -57,6 +57,7 @@ interface PickerItem {
 }
 
 interface DraftHeroHeadlineProps {
+  readonly branch?: string | null;
   readonly draftId: DraftId | null;
   readonly activeProjectRef: ScopedProjectRef | null;
   readonly activeProjectTitle: string | null;
@@ -66,6 +67,7 @@ export function DraftHeroHeadline({
   draftId,
   activeProjectRef,
   activeProjectTitle,
+  branch,
 }: DraftHeroHeadlineProps) {
   const gt = useGT();
   const projects = useProjects();
@@ -80,8 +82,6 @@ export function DraftHeroHeadline({
   const isTriageDraftPrompt = useComposerDraftStore((store) =>
     draftId ? isTriagePrompt(store.getComposerDraft(draftId)?.prompt ?? "") : false,
   );
-  const applyStickyState = useComposerDraftStore((store) => store.applyStickyState);
-  const setModelSelection = useComposerDraftStore((store) => store.setModelSelection);
   const { scratchEnvironmentId, scratchWorkspaceRootFor, openScratchProject } = useScratchProject();
   const openProjectDraft = useNewThreadHandler();
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
@@ -361,9 +361,17 @@ export function DraftHeroHeadline({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col items-center">
       {hasResolvedProject && !isScratchDraft ? (
-        <DraftHeroProjectHeading projectName={activeProjectTitle ?? gt("Choose a project")}>
-          {projectSelector}
-        </DraftHeroProjectHeading>
+        <>
+          <DraftHeroProjectHeading projectName={activeProjectTitle ?? gt("Choose a project")}>
+            {projectSelector}
+          </DraftHeroProjectHeading>
+          {branch && (
+            <span className="mt-2 inline-flex max-w-full items-center gap-1.5 text-xs text-muted-foreground">
+              <GitBranchIcon aria-hidden className="size-3.5 shrink-0" />
+              <code className="truncate">{branch}</code>
+            </span>
+          )}
+        </>
       ) : (
         <h1 className="w-full text-center font-normal text-2xl text-foreground tracking-tight sm:text-3xl">
           {isScratchDraft ? (

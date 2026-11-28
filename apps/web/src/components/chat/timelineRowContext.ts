@@ -74,6 +74,7 @@ export interface TimelineRowSharedState {
   findActive: boolean;
   onImageExpand: (preview: ExpandedImagePreview) => void;
   displayThreadKey?: string;
+  onOpenTurnDiff?: ((runId: RunId) => void) | undefined;
   onOpenToolDiff: ((target: ToolCallDiffTarget) => void) | undefined;
   /**
    * Draws a published HTML visual. Unset, the row loads it from the environment; the guest page

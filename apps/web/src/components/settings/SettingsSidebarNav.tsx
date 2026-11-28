@@ -411,6 +411,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                                 <SidebarMenuButton
                                   data-settings-section={to}
                                   aria-current={isActive ? "page" : undefined}
+                                  ref={isActive ? scrollResultIntoView : undefined}
                                   isActive={isActive}
                                   onClick={() => handleSectionClick(to)}
                                 >
@@ -418,6 +419,8 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                                   <span
                                     className={cn(
                                       "truncate",
+                                      isActive &&
+                                        "font-semibold before:absolute before:inset-y-2 before:start-0 before:w-0.5 before:rounded-full before:bg-primary",
                                       !compactSearchOpen && "max-md:sr-only",
                                     )}
                                   >

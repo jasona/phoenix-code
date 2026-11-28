@@ -1,3 +1,4 @@
+import { useGT } from "gt-react";
 import { useAtomValue } from "@effect/atom-react";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { formatThreadInferenceWait } from "@t3tools/client-runtime/state/inference-activity";
@@ -8,10 +9,13 @@ import { threadInferenceWaitAtom } from "../../state/inference";
 export function InferenceWaitStatus({
   threadRef,
   className,
+  compact = false,
 }: {
   readonly threadRef: ScopedThreadRef;
+  readonly compact?: boolean;
   readonly className?: string;
 }) {
+  const gt = useGT();
   const wait = useAtomValue(
     threadInferenceWaitAtom({
       environmentId: threadRef.environmentId,
@@ -21,7 +25,11 @@ export function InferenceWaitStatus({
   if (wait === null) return null;
   return (
     <span role="status" className={className}>
-      {formatThreadInferenceWait(wait)}
+      {compact
+        ? wait.ahead === 0
+          ? gt("Queued · next")
+          : gt("Queued · {count} ahead", { count: wait.ahead })
+        : formatThreadInferenceWait(wait)}
     </span>
   );
 }
