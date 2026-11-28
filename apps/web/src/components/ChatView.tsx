@@ -2523,6 +2523,7 @@ export default function ChatView(props: ChatViewProps) {
     createBrowserSurfaceStable,
     duplicateBrowserSurfaceStable,
     moveRightPanelSurfaceStable,
+    onOpenTurnDiffStable,
     onOpenToolDiffStable,
     openChangesFromThreadPanelStable,
     openFileSurfaceStable,
@@ -3670,6 +3671,7 @@ export default function ChatView(props: ChatViewProps) {
                   routeThreadKey={displayedTimelineKey}
                   displayThreadKey={displayedTimelineKey}
                   announceTurnStatus={!isProviderSubagent}
+                  onOpenTurnDiff={embedded ? parentPanel?.openTurnDiff : onOpenTurnDiffStable}
                   onOpenToolDiff={parentPanel?.openToolDiff ?? onOpenToolDiffStable}
                   // A fork would promote the side chat.
                   {...(embedded ? {} : { onForkFromRun: onForkFromRunStable })}
@@ -3751,6 +3753,7 @@ export default function ChatView(props: ChatViewProps) {
                         }
                       >
                         <DraftHeroHeadline
+                          branch={activeThreadBranch ?? gitStatusQuery.data?.refName ?? null}
                           draftId={draftId}
                           activeProjectRef={activeProjectRef}
                           activeProjectTitle={activeProject?.title ?? null}

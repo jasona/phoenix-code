@@ -15,7 +15,7 @@ export function DraftHeroProjectHeading({
   const gt = useGT();
   // One sentence for translators; the layout places the project picker at the placeholder.
   // The flex gap stands in for the space before it; the suffix keeps its own leading space.
-  const [before = "", after = ""] = gt("What should we build in {project}?", {
+  const [before = "", after = ""] = gt("New thread in {project}", {
     project: PROJECT_SLOT,
   }).split(PROJECT_SLOT);
   const buildIn = before.trim();
@@ -59,9 +59,7 @@ export function DraftHeroProjectHeading({
       </span>
       <h1 className="flex w-full flex-col items-center justify-center gap-2 text-center font-normal text-2xl text-foreground tracking-tight sm:text-3xl lg:group-data-[inline=true]/draft-hero:flex-row">
         <span className="max-w-full lg:group-data-[inline=true]/draft-hero:shrink-0 [@media(max-height:28rem)]:sr-only">
-          <span className="lg:group-data-[inline=true]/draft-hero:hidden">
-            {gt("What should we build?")}
-          </span>
+          <span className="lg:group-data-[inline=true]/draft-hero:hidden">{gt("New thread")}</span>
           <span className="hidden lg:group-data-[inline=true]/draft-hero:inline">{buildIn}</span>
         </span>
         <span className="flex min-w-0 max-w-full items-baseline justify-center text-base tracking-normal lg:group-data-[inline=true]/draft-hero:text-3xl lg:group-data-[inline=true]/draft-hero:tracking-tight">

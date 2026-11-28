@@ -1,3 +1,5 @@
+import { passedTestsFromOutput } from "./passedTestsFromOutput";
+import { turnChanges } from "@t3tools/client-runtime/state/thread-repositories";
 import * as DateTime from "effect/DateTime";
 import { msg } from "gt-react";
 import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
@@ -597,6 +599,8 @@ type MessagesTimelineRowContent =
     }
   | {
       kind: "turn-fold";
+      fileCount?: number;
+      testResult?: { passed: number; output: string };
       deferredWorkItemIds?: ReadonlyArray<string>;
       id: string;
       createdAt: string;
@@ -1665,6 +1669,9 @@ export function deriveMessagesTimelineRows(
         availableRevertTurnCounts: input.availableRevertTurnCounts,
       })
     : new Map<MessageId, number>();
+  const checkpointsByRun = new Map(
+    input.turnDiffSummaries.map((summary) => [summary.runId, summary]),
+  );
   const nextRows: MessagesTimelineRow[] = [];
   const terminalAssistantMessageIds = deriveTerminalAssistantMessageIds(timelineEntries);
   const failedRunIds = failedTimelineRunIds(timelineEntries, input.latestRun ?? null);
@@ -1972,8 +1979,29 @@ export function deriveMessagesTimelineRows(
           ? [String(entry.entry.projectedItem.sourceItemId)]
           : [];
       });
+      const checkpoint = checkpointsByRun.get(turnFold.runId);
+      const fileCount =
+        checkpoint && (checkpoint.status === "ready" || checkpoint.repositories?.length)
+          ? turnChanges(checkpoint).totals.count
+          : 0;
+      let testResult: { passed: number; output: string } | undefined;
+      for (const entryId of turnFold.entryIds) {
+        const work = timelineEntryById.get(entryId);
+        if (work?.kind !== "work") continue;
+        if (
+          work.entry.projectedItem &&
+          supersededWorkItemIds.has(String(work.entry.projectedItem.sourceItemId))
+        )
+          continue;
+        const item = work.entry.projectedItem?.item ?? work.entry.structuredPayload;
+        if (item?.type !== "command_execution" || !item.output) continue;
+        const passed = passedTestsFromOutput(item.output);
+        if (passed !== null) testResult = { passed, output: item.output };
+      }
       nextRows.push({
         kind: "turn-fold",
+        ...(fileCount > 0 ? { fileCount } : {}),
+        ...(testResult ? { testResult } : {}),
         id: `turn-fold:${turnFold.runId}`,
         ...(deferredWorkItemIds.length > 0 ? { deferredWorkItemIds } : {}),
         createdAt: turnFold.createdAt,
@@ -2814,6 +2842,11 @@ function isRowUnchanged(a: MessagesTimelineRow, b: MessagesTimelineRow): boolean
       return (
         a.createdAt === bf.createdAt &&
         a.label === bf.label &&
+        (a.kind !== "turn-fold" ||
+          bf.kind !== "turn-fold" ||
+          (a.fileCount === bf.fileCount &&
+            a.testResult?.passed === bf.testResult?.passed &&
+            a.testResult?.output === bf.testResult?.output)) &&
         a.expanded === bf.expanded &&
         anchors.length === nextAnchors.length &&
         anchors.every((id, index) => id === nextAnchors[index])

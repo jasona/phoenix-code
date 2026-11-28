@@ -62,6 +62,7 @@ import {
 } from "lucide-react";
 import {
   memo,
+  useEffect,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -69,6 +70,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import { PhoenixMark } from "../PhoenixMark";
 import { msg, T, useGT, useMessages, Var } from "gt-react";
 
 import type { MessageResolver } from "../../i18n/messages";
@@ -591,6 +593,7 @@ const TOP_STATUS_ICONS = {
   approval: ShieldQuestionIcon,
   failed: CircleAlertIcon,
   done: CircleCheckIcon,
+  settled: CircleCheckIcon,
   woke: AlarmClockIcon,
 } as const;
 
@@ -827,7 +830,8 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
           icon: "working" as const,
           className: "text-info-foreground",
         }
-      : status === "waiting"
+      : status === "waiting" &&
+          (thread.runtime?.status === "running" || (!isUnread && variantAction !== "unsettle"))
         ? {
             label: gt("Waiting", { $context: "thread status" }),
             icon: "waiting" as const,
@@ -871,11 +875,71 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                       }
                     : isUnread
                       ? {
-                          label: gt("Done", { $context: "thread status" }),
+                          label: gt("Ready for review"),
                           icon: "done" as const,
                           className: "text-success-foreground",
                         }
-                      : null;
+                      : variantAction === "unsettle"
+                        ? {
+                            label: gt("Settled"),
+                            icon: "settled" as const,
+                            className: "text-muted-foreground",
+                          }
+                        : null;
+
+  const plumeRef = useRef<HTMLSpanElement>(null);
+  const runStart = thread.latestRun?.startedAt;
+  const finished = thread.latestRun?.completedAt;
+  const readyForReview = topStatus?.icon === "done";
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- a row can remount as it moves out of Working; resume the same completion animation at its wall-clock position
+  useEffect(() => {
+    const plume = plumeRef.current;
+    if (
+      !plume ||
+      !readyForReview ||
+      props.isRouteThread ||
+      !finished ||
+      !runStart ||
+      Date.parse(finished) - Date.parse(runStart) < 60_000 ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const elapsed = Math.max(
+      0,
+      toServerClock(thread.environmentId, Date.now()) - Date.parse(finished),
+    );
+    const duration = 1000;
+    if (!Number.isFinite(elapsed) || elapsed >= duration) return;
+    const timing = { duration, delay: -elapsed, easing: "ease-out" };
+    const animation = plume.animate(
+      [
+        { opacity: 0, transform: "translateY(2px)" },
+        { opacity: 1, offset: 0.2, transform: "translateY(0)" },
+        { opacity: 1, offset: 0.72 },
+        { opacity: 0 },
+      ],
+      timing,
+    );
+    const glyph = plume.previousElementSibling?.animate(
+      [{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }],
+      timing,
+    );
+    return () => {
+      animation.cancel();
+      glyph?.cancel();
+    };
+  }, [readyForReview, runStart, finished, props.isRouteThread, thread.environmentId]);
+
+  const statusIcon = topStatus && (
+    <span className="relative inline-flex shrink-0">
+      <TopStatusIcon icon={topStatus.icon} className="size-3.5" />
+      {topStatus.icon === "done" && (
+        <span ref={plumeRef} aria-hidden className="pointer-events-none absolute inset-0 opacity-0">
+          <PhoenixMark variant="mono" className="size-full" />
+        </span>
+      )}
+    </span>
+  );
   const isWokeStatus = topStatus?.icon === "woke";
 
   const branchMismatch = resolveLocalCheckoutBranchMismatch({
@@ -1422,7 +1486,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                         <AlarmClockIcon aria-hidden className="size-3" />
                         {props.snoozeWakeLabelText}
                       </span>
-                    ) : (inFolder ? isWokeStatus : isWoke) ? (
+                    ) : isWokeStatus ? (
                       <Tooltip>
                         <TooltipTrigger
                           render={
@@ -1443,7 +1507,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                           <T>Dismiss Woke notification</T>
                         </TooltipPopup>
                       </Tooltip>
-                    ) : inFolder && topStatus ? (
+                    ) : topStatus ? (
                       // Folder rows have no status line, so the status takes the time slot.
                       <span
                         className={cn(
@@ -1451,7 +1515,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                           topStatus.className,
                         )}
                       >
-                        <TopStatusIcon icon={topStatus.icon} className="size-3" />
+                        {statusIcon}
                         {topStatus.label}
                       </span>
                     ) : (
@@ -1647,7 +1711,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                             topStatus.className,
                           )}
                         >
-                          <TopStatusIcon icon={topStatus.icon} className="size-4" />
+                          {statusIcon}
                           {/* Not a live region: a collapsed sidebar is inert, so
                             BackgroundThreadAnnouncer and the open thread's
                             timeline speak status changes instead. */}
@@ -1659,7 +1723,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                                 startedAt={resolveWorkingStartedAt(thread)}
                               />
                             </span>
-                          ) : status === "waiting" ? (
+                          ) : topStatus.icon === "waiting" ? (
                             <span aria-hidden>
                               <WorkingDuration
                                 environmentId={thread.environmentId}

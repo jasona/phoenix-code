@@ -1,6 +1,18 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- Build configs resolve the tag before an Effect runtime exists.
 import * as NodeChildProcess from "node:child_process";
 
+export function resolveSourceCommit(repoRoot: string): string {
+  try {
+    return NodeChildProcess.execFileSync("git", ["rev-parse", "--short=12", "HEAD"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: "pipe",
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
 export const releasePackageFiles = [
   "apps/server/package.json",
   "apps/desktop/package.json",

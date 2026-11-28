@@ -19,3 +19,14 @@ it("copies the version without a notification", async () => {
   expect(write).toHaveBeenCalledWith(APP_VERSION);
   await expect.element(page.getByText(/^Copied!?$/)).not.toBeInTheDocument();
 });
+
+it("copies the source revision from a checkout build", async () => {
+  await using screen = await render(
+    <AnchoredToastProvider>
+      <AboutVersionTitle checkout />
+    </AnchoredToastProvider>,
+  );
+  using write = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined);
+  await screen.getByRole("button", { name: "Copy commit hash" }).click();
+  expect(write).toHaveBeenCalledWith(import.meta.env.SOURCE_COMMIT);
+});

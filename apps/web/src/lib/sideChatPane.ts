@@ -30,6 +30,7 @@ export function isInSideChatPane(target: EventTarget | null): boolean {
 export interface SideChatParentPanel {
   /** The thread whose panel shows the embedded one. */
   readonly hostRef: ScopedThreadRef;
+  readonly openTurnDiff?: (runId: import("@t3tools/contracts").RunId) => void;
   readonly openToolDiff: (target: ToolCallDiffTarget) => void;
   readonly runShellCommand: (command: string) => void;
 }

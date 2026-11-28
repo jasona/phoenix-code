@@ -108,12 +108,14 @@ export const DesktopUpdateChannelSchema = Schema.Literals(["latest", "nightly"])
 export const DesktopAppStageLabelSchema = Schema.Literals(["Alpha", "Beta", "Dev", "Nightly"]);
 
 export interface DesktopAppBranding {
+  isPackaged?: boolean;
   baseName: string;
   stageLabel: DesktopAppStageLabel;
   displayName: string;
 }
 
 export const DesktopAppBrandingSchema = Schema.Struct({
+  isPackaged: Schema.optional(Schema.Boolean),
   baseName: Schema.String,
   stageLabel: DesktopAppStageLabelSchema,
   displayName: Schema.String,

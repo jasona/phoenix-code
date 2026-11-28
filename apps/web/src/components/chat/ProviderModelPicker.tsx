@@ -9,7 +9,8 @@ import {
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
 import { T, useGT } from "gt-react";
-import { CpuIcon } from "lucide-react";
+import type { ScopedThreadRef } from "@t3tools/contracts";
+import { InferenceWaitStatus } from "./InferenceWaitStatus";
 import {
   createContext,
   memo,
@@ -129,6 +130,7 @@ export const DockedPickerContext = createContext<{ modelLabel: string }>({ model
 
 export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   environmentId: EnvironmentId | null;
+  threadRef?: ScopedThreadRef;
   workspaceCwd?: string | null;
   activeInstanceId: ProviderInstanceId;
   model: string;
@@ -506,10 +508,17 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
               data-composer-control-label
               className="flex max-w-20 shrink-0 items-center gap-1 truncate text-xs text-muted-foreground"
             >
-              <CpuIcon aria-hidden className="size-3 shrink-0" />
+              <span aria-hidden>·</span>
               <span className="truncate">{localPlace}</span>
             </span>
           ) : null}
+          {props.threadRef && !selectedEntries && (
+            <InferenceWaitStatus
+              compact
+              threadRef={props.threadRef}
+              className="max-w-32 truncate text-xs text-muted-foreground"
+            />
+          )}
           {props.triggerSuffix}
           {selectedModel?.isUnavailable && !selectedEntries && props.triggerLabel === undefined ? (
             <Badge variant="outline" size="sm">

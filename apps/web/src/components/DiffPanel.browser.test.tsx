@@ -507,6 +507,48 @@ it.each([
     .toHaveAttribute("aria-expanded", "true");
 });
 
+it("cycles through added and deleted hunks without changing the line selection", async () => {
+  using context = setup("main");
+  state.toolCallItem = {
+    type: "file_change",
+    fileName: "sample.ts",
+    diffStr:
+      "--- sample.ts\n+++ sample.ts\n@@ -1,2 +1,2 @@\n context\n-old\n+new\n@@ -24,2 +24,1 @@\n context\n-deleted\n",
+  };
+  useDiffPanelStore.getState().selectToolCall(context.threadRef, {
+    threadId: context.threadRef.threadId,
+    itemId: TurnItemId.make("hunks"),
+    revision: "1",
+  });
+  await using screen = await render(
+    <RegistryContext.Provider value={context.registry}>
+      <div style={{ height: 600, display: "flex", flexDirection: "column" }}>
+        <DiffPanel composerDraftTarget={context.threadRef} workspaceMutationId={null} visible />
+      </div>
+    </RegistryContext.Provider>,
+  );
+  using flash = vi.spyOn(Element.prototype, "animate");
+  const next = screen.getByRole("button", { name: "Next changed hunk" });
+  for (const [line, kind] of [
+    ["2", "change-addition"],
+    ["25", "change-deletion"],
+    ["2", "change-addition"],
+  ]) {
+    flash.mockClear();
+    await next.click();
+    await vi.waitFor(() =>
+      expect(
+        flash.mock.contexts.some(
+          (node) =>
+            node instanceof HTMLElement &&
+            node.getAttribute("data-column-number") === line &&
+            node.getAttribute("data-line-type") === kind,
+        ),
+      ).toBe(true),
+    );
+  }
+});
+
 it("opens a file from a tool call's diff by the path its agent recorded", async () => {
   using context = setup("origin/orphan");
   // A local thread in a project that is the repository's apps/web folder.

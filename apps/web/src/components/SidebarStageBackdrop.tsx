@@ -48,6 +48,11 @@ export function useEnvironmentStageLabel(): string {
 }
 
 export function SidebarStageBackdrop({ variant }: { variant: SidebarStageBackdropVariant }) {
+  const crop = {
+    regular: { objectPosition: "74% 59%", scale: "1.05" },
+    dev: { objectPosition: "88% 38%", scale: "1.18" },
+    nightly: { objectPosition: "81% 67%", scale: "1.10" },
+  }[variant];
   return (
     <div
       aria-hidden
@@ -57,7 +62,8 @@ export function SidebarStageBackdrop({ variant }: { variant: SidebarStageBackdro
         alt=""
         draggable={false}
         src={artwork[variant]}
-        className="size-full object-cover object-right"
+        className="size-full object-cover [mask-image:linear-gradient(90deg,#0003,#0008_36%,black_66%)]"
+        style={{ ...crop, transformOrigin: crop.objectPosition }}
       />
     </div>
   );

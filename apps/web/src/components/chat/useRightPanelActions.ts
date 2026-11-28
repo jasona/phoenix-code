@@ -7,12 +7,12 @@ import type { ThreadPreviewState } from "../../previewStateStore";
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
 import { useStableCallback } from "../../hooks/useStableCallback";
-import { type ScopedThreadRef, type PreviewSessionSnapshot } from "@t3tools/contracts";
+import { type RunId, type ScopedThreadRef, type PreviewSessionSnapshot } from "@t3tools/contracts";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { sideThreadComposer, sideThreadKindOf } from "@t3tools/client-runtime/side-thread";
 import { readThreadShell } from "../../state/entities";
 import { scopedThreadKey } from "@t3tools/client-runtime/environment";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -317,8 +317,68 @@ export function useRightPanelActions(input: RightPanelActionsInput) {
     useRightPanelStore.getState().openPullRequest(activeThreadRef, pullRequestPanelTarget);
   };
   const addPullRequestSurfaceStable = useStableCallback(addPullRequestSurface);
+  const diffOrigin = useRef<{
+    node: HTMLElement;
+    threadKey: string;
+    viewport: HTMLElement;
+    offset: number;
+    rowId: string;
+  } | null>(null);
+  const rememberDiffOrigin = () => {
+    const node = document.activeElement;
+    if (!(node instanceof HTMLElement) || !activeThreadRef) return;
+    const viewport = node.closest<HTMLElement>("[data-assistant-citation-viewport]");
+    const rowId = node.closest<HTMLElement>("[data-timeline-row-id]")?.dataset.timelineRowId;
+    if (viewport && rowId) {
+      diffOrigin.current = {
+        node,
+        threadKey: scopedThreadKey(activeThreadRef),
+        viewport,
+        rowId,
+        offset: node.getBoundingClientRect().top - viewport.getBoundingClientRect().top,
+      };
+    }
+  };
+  const activeThreadKey = activeThreadRef && scopedThreadKey(activeThreadRef);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- return keyboard focus after the diff panel gives the transcript back its space
+  useEffect(() => {
+    if (diffOpen) return;
+    const origin = diffOrigin.current;
+    diffOrigin.current = null;
+    if (
+      rightPanelOpen ||
+      !origin ||
+      origin.threadKey !== activeThreadKey ||
+      !origin.viewport.isConnected
+    )
+      return;
+    const frame = requestAnimationFrame(() => {
+      const row = origin.viewport.querySelector<HTMLElement>(
+        `[data-timeline-row-id="${CSS.escape(origin.rowId)}"]`,
+      );
+      if (!row) return;
+      const target = row.contains(origin.node)
+        ? origin.node
+        : row.querySelector<HTMLElement>("button, a[href]");
+      if (!target) return;
+      origin.viewport.scrollTop +=
+        target.getBoundingClientRect().top -
+        origin.viewport.getBoundingClientRect().top -
+        origin.offset;
+      target.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [diffOpen, rightPanelOpen, activeThreadKey]);
+  const onOpenTurnDiffStable = useStableCallback((runId: RunId) => {
+    if (!isServerThread || !activeThreadRef) return;
+    rememberDiffOrigin();
+    useDiffPanelStore.getState().selectTurn(activeThreadRef, runId);
+    useRightPanelStore.getState().open(activeThreadRef, "diff");
+    onDiffPanelOpen?.();
+  });
   const onOpenToolDiffStable = useStableCallback((target: ToolCallDiffTarget) => {
     if (!isServerThread || !activeThreadRef) return;
+    rememberDiffOrigin();
     useDiffPanelStore.getState().selectToolCall(activeThreadRef, target);
     useRightPanelStore.getState().open(activeThreadRef, "diff");
     onDiffPanelOpen?.();
@@ -363,6 +423,7 @@ export function useRightPanelActions(input: RightPanelActionsInput) {
     createBrowserSurfaceStable,
     duplicateBrowserSurfaceStable,
     moveRightPanelSurfaceStable,
+    onOpenTurnDiffStable,
     onOpenToolDiffStable,
     onToggleDiffStable,
     onToggleSwarmStable,

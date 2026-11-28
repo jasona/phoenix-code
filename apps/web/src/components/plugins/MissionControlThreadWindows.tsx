@@ -1,3 +1,4 @@
+import { ProjectFavicon } from "../ProjectFavicon";
 import {
   scopedThreadKey,
   scopeProjectRef,
@@ -44,14 +45,19 @@ function ThreadWindowLabel({ window }: { window: MissionControlWindow }) {
   const gt = useGT();
   const { draft, threadRef } = useWindowDraft(window);
   const shell = useQuietThreadShell(threadRef);
-  const project = useProject(draft ? scopeProjectRef(draft.environmentId, draft.projectId) : null);
-  return draft && !draft.promotedTo ? (
-    <>
-      {gt("New thread")}
-      {project ? ` · ${project.title}` : ""}
-    </>
-  ) : (
-    (shell?.title ?? gt("Review thread"))
+  const projectId = draft?.projectId ?? shell?.projectId;
+  const project = useProject(
+    projectId ? scopeProjectRef(threadRef.environmentId, projectId) : null,
+  );
+  const label =
+    draft && !draft.promotedTo
+      ? [gt("New thread"), project?.title].filter(Boolean).join(" · ")
+      : (shell?.title ?? gt("Review thread"));
+  return (
+    <span className="inline-flex min-w-0 items-center gap-2 align-middle">
+      {project && <ProjectFavicon project={project} className="size-3.5 shrink-0" />}
+      <span className="truncate">{label}</span>
+    </span>
   );
 }
 
@@ -389,8 +395,8 @@ function MissionControlThreadWindow({
         }
       }}
       className={cn(
-        "pointer-events-auto absolute flex flex-col rounded-lg border bg-background shadow-xl outline-none [-webkit-app-region:no-drag]",
-        focused ? "border-ring" : "border-border",
+        "pointer-events-auto absolute flex flex-col rounded-lg border bg-background outline-none [-webkit-app-region:no-drag]",
+        focused ? "border-ring/65 shadow-lg" : "border-border shadow-sm",
         !visible && "hidden",
       )}
       style={{
@@ -401,7 +407,12 @@ function MissionControlThreadWindow({
         zIndex: order + 1,
       }}
     >
-      <div className="flex h-10 shrink-0 items-center gap-1 rounded-t-lg border-b border-border bg-muted px-2">
+      <div
+        className={cn(
+          "flex h-10 shrink-0 items-center gap-1 rounded-t-lg border-b border-border px-2",
+          focused ? "bg-accent text-foreground" : "bg-muted text-muted-foreground",
+        )}
+      >
         <div
           role="button"
           tabIndex={0}

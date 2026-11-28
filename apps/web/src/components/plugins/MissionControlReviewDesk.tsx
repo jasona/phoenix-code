@@ -441,6 +441,10 @@ function ReviewDeskContent({
     });
   const parentPanel: SideChatParentPanel = {
     hostRef: threadRef,
+    openTurnDiff: (runId) => {
+      useDiffPanelStore.getState().selectTurn(threadRef, runId);
+      setPane("changes");
+    },
     openToolDiff: (target) => {
       useDiffPanelStore.getState().selectToolCall(threadRef, target);
       setPane("changes");
