@@ -199,8 +199,7 @@ export const TerminalFontSize = Schema.Int.check(
 export type TerminalFontSize = typeof TerminalFontSize.Type;
 const DEFAULT_TERMINAL_FONT_SIZE: TerminalFontSize = 12;
 
-// "artwork" follows the running channel and shows nothing on Latest. The fixed artwork
-// modes let any channel opt into a specific channel's art.
+// "artwork" follows the client build. Fixed artwork choices persist across builds.
 export const EnvironmentIdentificationMode = Schema.Literals([
   "artwork",
   "nightly-artwork",
