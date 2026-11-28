@@ -25,6 +25,7 @@ import {
 import { primaryServerKeybindingsAtom } from "../../state/server";
 import { cn } from "../../lib/utils";
 import { useIssuesSupported, usePullRequestsSupported } from "../../state/environments";
+import { APP_STAGE_LABEL } from "../../branding";
 import { PhoenixMark, PhoenixWordmark } from "../PhoenixMark";
 import {
   resolveEnvironmentIdentificationPillLabel,
@@ -62,7 +63,7 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
   const environmentIdentificationMode = useEnvironmentIdentificationMode();
   const gt = useGT();
   const backdropVariant = resolveSidebarStageBackdropVariant(
-    stageLabel,
+    APP_STAGE_LABEL,
     environmentIdentificationMode,
   );
   const pillLabel =

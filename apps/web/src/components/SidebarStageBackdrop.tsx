@@ -2,14 +2,16 @@ import { useAtomValue } from "@effect/atom-react";
 import type { EnvironmentIdentificationMode } from "@t3tools/contracts";
 import { useId } from "react";
 
+import regularArtwork from "../assets/build-artwork/regular.webp";
+import devArtwork from "../assets/build-artwork/dev.webp";
+import nightlyArtwork from "../assets/build-artwork/nightly.webp";
 import { APP_STAGE_LABEL } from "../branding";
 import { resolveServerBackedAppStageLabel } from "../branding.logic";
 import { primaryServerConfigAtom } from "../state/server";
 
-export type SidebarStageBackdropVariant = "nightly" | "dev";
+const artwork = { regular: regularArtwork, dev: devArtwork, nightly: nightlyArtwork };
+type SidebarStageBackdropVariant = keyof typeof artwork;
 export type EnvironmentIdentificationPillLabel = "Dev" | "Nightly";
-
-const STAGE_BACKDROP_VIEW_BOX = "0 0 8192 96";
 
 export function resolveSidebarStageBackdropVariant(
   stageLabel: string,
@@ -21,7 +23,7 @@ export function resolveSidebarStageBackdropVariant(
   const normalized = stageLabel.trim().toLowerCase();
   if (normalized === "nightly") return "nightly";
   if (normalized === "dev") return "dev";
-  return null;
+  return "regular";
 }
 
 export function resolveEnvironmentIdentificationPillLabel(
@@ -45,29 +47,25 @@ export function useEnvironmentStageLabel(): string {
   });
 }
 
-export function useSidebarStageBackdropVariant(
-  mode: EnvironmentIdentificationMode,
-): SidebarStageBackdropVariant | null {
-  return resolveSidebarStageBackdropVariant(useEnvironmentStageLabel(), mode);
-}
-
 export function SidebarStageBackdrop({ variant }: { variant: SidebarStageBackdropVariant }) {
   return (
     <div
       aria-hidden
       className="sidebar-stage-backdrop pointer-events-none absolute inset-x-0 top-0 z-0 h-20 select-none overflow-hidden"
     >
-      <StageBackdropArt variant={variant} />
+      <img
+        alt=""
+        draggable={false}
+        src={artwork[variant]}
+        className="size-full object-cover object-right"
+      />
     </div>
   );
 }
 
-function StageBackdropArt({ variant }: { variant: SidebarStageBackdropVariant }) {
-  return <SmokyEmberCloudArt palette={variant === "nightly" ? "nightly" : "ember"} />;
-}
-
-export function StageBackdropButtonArt({ variant }: { variant: SidebarStageBackdropVariant }) {
-  return <SmokyEmberCloudArt compact palette={variant === "nightly" ? "nightly" : "ember"} />;
+export function useComposerBackdropVariant(mode: EnvironmentIdentificationMode) {
+  const variant = resolveSidebarStageBackdropVariant(useEnvironmentStageLabel(), mode);
+  return variant === "regular" ? null : variant;
 }
 
 const EMBER_SPARKS: ReadonlyArray<{
@@ -99,15 +97,9 @@ const EMBER_GLINTS: ReadonlyArray<{ x: number; y: number }> = [
   { x: 276, y: 22 },
 ];
 
-function SmokyEmberCloudArt({
-  palette,
-  compact = false,
-}: {
-  palette: "ember" | "nightly";
-  compact?: boolean;
-}) {
+export function StageBackdropButtonArt({ variant }: { variant: "dev" | "nightly" }) {
   const idPrefix = useId().replaceAll(":", "");
-  const isNightly = palette === "nightly";
+  const isNightly = variant === "nightly";
   const skyId = `${idPrefix}-stage-sky`;
   const upperGlowId = `${idPrefix}-stage-upper-glow`;
   const horizonGlowId = `${idPrefix}-stage-horizon-glow`;
@@ -141,7 +133,7 @@ function SmokyEmberCloudArt({
       className="h-full w-full"
       fill="none"
       preserveAspectRatio="xMinYMin slice"
-      viewBox={compact ? "48 8 8192 88" : STAGE_BACKDROP_VIEW_BOX}
+      viewBox="48 8 8192 88"
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
