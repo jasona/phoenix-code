@@ -25,16 +25,14 @@ jobs:
     outputs:
       build: ${{ steps.gate.outputs.build }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          sparse-checkout: .github/scripts
-          persist-credentials: false
+      - name: Read the nightly scheduling rules
+        run: curl --fail --retry 3 --silent --show-error "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/.github/scripts/check-nightly-release.cjs" -o check-nightly-release.cjs
       - id: gate
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           retries: 3
           script: |
-            const { shouldReleaseNightly } = require('./.github/scripts/check-nightly-release.cjs');
+            const { shouldReleaseNightly } = require('./check-nightly-release.cjs');
             core.setOutput('build', context.eventName !== 'schedule' || await shouldReleaseNightly({ github, context, core }));
 
   build:
@@ -49,13 +47,15 @@ jobs:
       T3CODE_DESKTOP_UPDATE_REPOSITORY: ${{ github.repository }}
       T3CODE_RELEASE_CHANNEL: ${{ inputs.channel || 'nightly' }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          persist-credentials: false
-          sparse-checkout: |
-            /*
-            !/.repos/
-          sparse-checkout-cone-mode: false
+      # The vendored reference trees contain gitlinks without submodule URLs.
+      # Fetch the public source without traversing them during checkout cleanup.
+      - name: Check out the release commit
+        run: |
+          git init .
+          git remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
+          git sparse-checkout set --no-cone '/*' '!/.repos/'
+          git fetch --depth=1 --filter=blob:none origin "$GITHUB_SHA"
+          git checkout --detach FETCH_HEAD
       - uses: ./.github/actions/setup-ci-deps
       - name: Install Linux packaging dependencies
         run: |
